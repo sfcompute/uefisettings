@@ -50,8 +50,14 @@ use crate::translation::IloTranslation;
 /// `SettingsBackend` is a trait which should be satisfied by all backends (like ilo, hii)
 pub trait SettingsBackend {
     /// set changes the value of the UEFI question/attribute
+    ///
+    /// # Errors
+    /// Returns an error if the backend fails to apply the setting.
     fn set(question: &str, new_value: &str, selector: Option<&str>) -> Result<SetResponseList>;
     /// get displays the value of the UEFI question/attribute
+    ///
+    /// # Errors
+    /// Returns an error if the backend fails to read the setting.
     fn get(question: &str, selector: Option<&str>) -> Result<GetResponseList>;
 }
 
@@ -59,6 +65,9 @@ pub struct HiiBackend {}
 
 impl HiiBackend {
     /// `extract_db` extracts `HiiDB` from efivarfs and returns it in bytes (in `HiiDatabase`'s db field which is Vec<u8>)
+    ///
+    /// # Errors
+    /// Returns an error if the `HiiDB` cannot be read from efivarfs.
     pub fn extract_db() -> Result<HiiDatabase> {
         let resp = HiiDatabase {
             db: extract::extract_db()?,
@@ -68,6 +77,9 @@ impl HiiBackend {
     }
 
     /// `show_ifr` returns a human readable representation of the forms in Hii
+    ///
+    /// # Errors
+    /// Returns an error if the `HiiDB` bytes cannot be parsed.
     pub fn show_ifr(db_bytes: &[u8]) -> Result<HiiShowIfrResponse> {
         // We depend on the caller to provide us with the hiidb instead of calling extract here
         // because they might want to provide a file instead.
@@ -98,6 +110,9 @@ impl HiiBackend {
     }
 
     /// list all strings-id, string pairs in `HiiDB`
+    ///
+    /// # Errors
+    /// Returns an error if the `HiiDB` bytes cannot be parsed.
     pub fn list_strings(db_bytes: &[u8]) -> Result<Vec<HiiStringsPackage>> {
         let mut resp = Vec::new();
         let parsed_db = package::read_db(db_bytes)?;
@@ -118,6 +133,8 @@ impl HiiBackend {
         Ok(resp)
     }
 
+    /// # Errors
+    /// Returns an error if the `HiiDB` bytes cannot be parsed.
     pub fn list_questions(db_bytes: &[u8]) -> Result<Vec<Question>> {
         let mut res = Vec::new();
         let parsed_db = package::read_db(db_bytes)?;
@@ -192,7 +209,7 @@ impl SettingsBackend for HiiBackend {
                     // (example whatever matches from [Enabled, Enable])
                     // else try setting the new_value because it might be some arbitrary value like a number
                     // (will return error if doesn't match constraints)
-                    if (question_descriptor.possible_options.is_empty()) {
+                    if question_descriptor.possible_options.is_empty() {
                         modified = forms::change_value(&question_descriptor, new_value)?;
                     } else {
                         // This is different from modified because if varstore doesn't exist for the question
@@ -319,6 +336,9 @@ pub struct IloBackend {}
 
 impl IloBackend {
     /// list all bios setting attributes provided by ilo
+    ///
+    /// # Errors
+    /// Returns an error if the iLO BMC cannot be reached or returns an error.
     pub fn show_attributes() -> Result<Vec<IloAttributes>> {
         let mut resp = Vec::new();
 
@@ -359,6 +379,9 @@ impl IloBackend {
     }
 
     /// list bios pending changes to attributes provided by ilo
+    ///
+    /// # Errors
+    /// Returns an error if the iLO BMC cannot be reached or returns an error.
     pub fn show_pending_attributes() -> Result<Vec<IloAttributes>> {
         let mut resp = Vec::new();
 
@@ -621,6 +644,7 @@ fn btreemap_from_redfish_attributes(attributes: RedfishAttributes) -> BTreeMap<S
     map
 }
 
+#[allow(clippy::needless_pass_by_value)]
 fn compare_redfish_attributes(
     old_attributes: RedfishAttributes,
     new_attributes: RedfishAttributes,

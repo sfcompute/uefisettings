@@ -26,7 +26,7 @@ const FS_IOC_GETFLAGS: u8 = 1;
 const FS_IOC_SETFLAGS: u8 = 2;
 
 // full list of flags https://github.com/torvalds/linux/blob/master/include/uapi/linux/fs.h#L239
-pub const FS_IMMUTABLE_FL: i64 = 0x00000010; // Immutable file
+pub const FS_IMMUTABLE_FL: i64 = 0x0000_0010; // Immutable file
 
 nix::ioctl_read!(
     ioctl_fs_get_attrs,

@@ -57,8 +57,8 @@ pub struct Transport<'a> {
 }
 
 impl<'a> Transport<'a> {
-    pub fn new(ilo: &'a IloRestChif) -> Result<Self> {
-        Ok(Self { ilo })
+    pub fn new(ilo: &'a IloRestChif) -> Self {
+        Self { ilo }
     }
 
     /// `make_request` isn't really a REST request, it just receives some bytes,
@@ -69,7 +69,7 @@ impl<'a> Transport<'a> {
         let response_key = CString::new(gen_random_str(10))?;
         let namespace = CString::new("volatile")?;
 
-        let rest_resp = if (request.len() as u32)
+        let rest_resp = if u32::try_from(request.len())?
             < (self.ilo.get_max_write_size() + self.ilo.get_immediate_request_size())
         {
             // No need to create a keyval store entry, we can send it directly
@@ -78,7 +78,7 @@ impl<'a> Transport<'a> {
 
             let header_template =
                 self.ilo
-                    .prepare_immediate_request(request.len() as u32, &response_key, &namespace);
+                    .prepare_immediate_request(u32::try_from(request.len())?, &response_key, &namespace);
 
             let mut packet_to_send = Vec::from(header_template);
             packet_to_send.append(&mut request.to_owned());
@@ -282,7 +282,7 @@ impl<'a> Transport<'a> {
         let max_write_size = self.ilo.get_max_write_size();
         let write_request_size = self.ilo.get_write_request_size();
 
-        let data_length: u32 = data.len() as u32;
+        let data_length: u32 = u32::try_from(data.len())?;
 
         let mut bytes_written: u32 = 0;
 

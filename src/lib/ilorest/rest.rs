@@ -12,6 +12,7 @@
 
 use std::collections::HashMap;
 use std::ffi::CString;
+use std::fmt::Write;
 
 use anyhow::anyhow;
 use anyhow::Result;
@@ -39,53 +40,53 @@ impl RestClient {
     }
     // get request to the endpoint. Returns HTTP status code and response body bytes.
     pub fn get(&self, endpoint: &str) -> Result<(u16, Vec<u8>)> {
-        let response = self.exec("GET", endpoint, self.default_headers(), "")?;
-        self.parse(response)
+        let response = self.exec("GET", endpoint, Self::default_headers(), "")?;
+        Self::parse(&response)
     }
 
     // post request to the endpoint with given JSON body. Returns HTTP status code and response body bytes.
     #[allow(dead_code)]
     pub fn post(&self, endpoint: &str, body: &str) -> Result<(u16, Vec<u8>)> {
-        let mut headers = self.default_headers();
+        let mut headers = Self::default_headers();
         headers.insert(
             "Content-Type".to_string(),
             "application/json; charset=utf-8".to_string(),
         );
         let response = self.exec("POST", endpoint, headers, body)?;
-        self.parse(response)
+        Self::parse(&response)
     }
 
     // patch request to the endpoint with given JSON body. Returns HTTP status code and response body bytes.
     pub fn patch(&self, endpoint: &str, body: &str) -> Result<(u16, Vec<u8>)> {
-        let mut headers = self.default_headers();
+        let mut headers = Self::default_headers();
         headers.insert(
             "Content-Type".to_string(),
             "application/json; charset=utf-8".to_string(),
         );
         let response = self.exec("PATCH", endpoint, headers, body)?;
-        self.parse(response)
+        Self::parse(&response)
     }
 
     // put request to the endpoint with given JSON body. Returns HTTP status code and response body bytes.
     #[allow(dead_code)]
     pub fn put(&self, endpoint: &str, body: &str) -> Result<(u16, Vec<u8>)> {
-        let mut headers = self.default_headers();
+        let mut headers = Self::default_headers();
         headers.insert(
             "Content-Type".to_string(),
             "application/json; charset=utf-8".to_string(),
         );
         let response = self.exec("PUT", endpoint, headers, body)?;
-        self.parse(response)
+        Self::parse(&response)
     }
 
     // parse takes in the raw response bytes and parses the HTTP headers.
     // It returns (response HTTP status code, response body without the HTTP headers)
-    fn parse(&self, raw_response: Vec<u8>) -> Result<(u16, Vec<u8>)> {
+    fn parse(raw_response: &[u8]) -> Result<(u16, Vec<u8>)> {
         // for perf reasons, httparse's API forces us to specify max number of headers
         let mut headers = [httparse::EMPTY_HEADER; 64];
         let mut parsed_response = Response::new(&mut headers);
 
-        let parse_status = parsed_response.parse(&raw_response)?;
+        let parse_status = parsed_response.parse(raw_response)?;
 
         match parse_status {
             Status::Complete(body_offset) => {
@@ -112,7 +113,7 @@ impl RestClient {
     }
 
     // default_headers for creating a new REST request
-    fn default_headers(&self) -> HashMap<String, String> {
+    fn default_headers() -> HashMap<String, String> {
         HashMap::from([
             ("Host".to_string(), String::new()),
             ("Accept-Encoding".to_string(), "identity".to_string()),
@@ -138,7 +139,7 @@ impl RestClient {
 
         let lib = get_lib(&(self.lib_path))?;
         let ilo = IloRestChif::new(&lib)?;
-        let transport = Transport::new(&ilo)?;
+        let transport = Transport::new(&ilo);
 
         ilo.ping()
             .map_err(|code| anyhow!(format!("Unexpected Status Code: {} during ping", code)))?;
@@ -150,7 +151,7 @@ impl RestClient {
             ))
         })?;
 
-        let request = self.generate_request_bytes(method, endpoint, body, headers)?;
+        let request = Self::generate_request_bytes(method, endpoint, body, headers)?;
 
         // HPE's ilorest CLI tool has a lot of retries spanning across multiple function calls during transport
         // however we will only have retries at one place, which makes it much simpler.
@@ -183,7 +184,6 @@ impl RestClient {
 
     // generate_request_bytes generates the request headers + body and returns bytes
     fn generate_request_bytes(
-        &self,
         method: &str,
         endpoint: &str,
         body: &str,
@@ -193,9 +193,9 @@ impl RestClient {
         headers.insert("Content-Length".to_string(), body.len().to_string());
 
         for (header_key, header_value) in headers {
-            request_contents.push_str(&format!("{header_key}: {header_value}\r\n"));
+            let _ = write!(request_contents, "{header_key}: {header_value}\r\n");
         }
-        request_contents.push_str(&format!("\r\n{body}"));
+        let _ = write!(request_contents, "\r\n{body}");
 
         debug!("Sending request \n{}", request_contents);
 

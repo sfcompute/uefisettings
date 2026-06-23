@@ -31,7 +31,7 @@ pub enum HiiTranslation {
 /// `get_qa_variations_hii` translates canonical questions and answers into possible hii variants
 /// If any part isn't in the translation database, it doesn't fail it just returns the original values in required form.
 /// Ex: the canonical question "Hyper Threading" -> ["Hyper-Threading", "Enable LP", "Hyper-Threading [ALL]"]
-/// and for it the canonical answer "Enabled" -> ["Enabled", "Enable"].
+/// and for it the canonical answer `"Enabled"` -> `["Enabled", "Enable"]`.
 pub fn get_qa_variations_hii(question: &str, answer: &str) -> HiiTranslation {
     let mut question_variations = HashSet::from([question.to_owned()]);
     let mut answer_variations = HashSet::from([answer.to_owned()]);
@@ -99,7 +99,7 @@ pub fn get_qa_variations_ilo(question: &str, answer: &str) -> IloTranslation {
             if let Some(answer_replacements) = &(ilo_question_mapping.answer_replacements) {
                 for (key, value) in answer_replacements {
                     if key.eq_ignore_ascii_case(answer) {
-                        translated_answer = value.to_owned();
+                        value.clone_into(&mut translated_answer);
                         break;
                     }
                 }

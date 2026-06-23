@@ -27,6 +27,7 @@ pub struct FileLock {
 }
 
 impl FileLock {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new<T>(file_path: T) -> Self
     where
         T: AsRef<Path> + ToString,
@@ -42,6 +43,7 @@ impl FileLock {
             .read(true)
             .write(true)
             .create(true)
+            .truncate(false)
             .open(&self.path)
             .context(format!("failed to open or create {}", &self.path))?;
 

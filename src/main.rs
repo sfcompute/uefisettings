@@ -172,11 +172,12 @@ enum IloSubcommands {
     },
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn main() -> Result<()> {
     env_logger::init();
     let args = UefiSettingsToolArgs::parse();
 
-    if let Err(why) = handle_cmds(args) {
+    if let Err(why) = handle_cmds(&args) {
         print_with_style(
             uefisettings_backend_thrift::Error {
                 error_message: format!("{why:#}"),
@@ -191,7 +192,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn handle_cmds(args: UefiSettingsToolArgs) -> Result<()> {
+fn handle_cmds(args: &UefiSettingsToolArgs) -> Result<()> {
     match &args.command {
         Commands::Hii(hii_command) => match &hii_command.command {
             HiiSubcommands::Get { question, json } => {
@@ -215,7 +216,7 @@ fn handle_cmds(args: UefiSettingsToolArgs) -> Result<()> {
                 let res = HiiBackend::extract_db()?;
                 file.write_all(&res.db)?;
 
-                println!("{{\"info\": \"HiiDB written to {:?}\"}}", &filename);
+                println!("{{\"info\": \"HiiDB written to {}\"}}", filename.display());
             }
             HiiSubcommands::ListStrings { filename, json } => {
                 let res = HiiBackend::list_strings(&get_db_dump_bytes(filename.as_deref())?)?;

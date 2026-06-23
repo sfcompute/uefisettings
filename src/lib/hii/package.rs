@@ -40,9 +40,10 @@ struct PackageList {
 
 #[derive(BinRead, Debug, PartialEq)]
 #[br(little)]
+#[allow(clippy::struct_field_names)]
 struct Package {
     // we need only 24 bits for length but are reading as u32 so discard the rest
-    #[br(map = |x: u32| x  & 0x00FFFFFF)]
+    #[br(map = |x: u32| x  & 0x00FF_FFFF)]
     length: u32,
     // now move cursor back by 32 - 24 = 8 bits = 1 byte
     #[br(seek_before = SeekFrom::Current(-1))]
@@ -229,7 +230,7 @@ pub fn read_db(source: &[u8]) -> Result<ParsedHiiDB> {
                         return Err(why);
                     }
                 },
-                _ => continue,
+                _ => {}
             }
         }
 

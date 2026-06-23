@@ -284,7 +284,7 @@ impl fmt::Debug for IFROperation {
             .field("open_scope", &self.open_scope)
             .field("length", &self.length)
             .field("children", &self.children)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -566,6 +566,7 @@ trait VariableStore {
 
 #[derive(BinRead, Debug, PartialEq, Clone)]
 #[br(little)]
+#[allow(clippy::struct_field_names)]
 pub struct VarStore {
     pub guid: Guid,
     pub var_store_id: u16,
@@ -639,6 +640,7 @@ pub struct Form {
 
 #[derive(BinRead, Debug, PartialEq)]
 #[br(little)]
+#[allow(clippy::struct_field_names)]
 pub struct Text {
     pub prompt_string_id: u16,
     pub help_string_id: u16,
@@ -800,7 +802,7 @@ pub fn handle_form_package(
                     current_scope.borrow().op_code
                 );
             } else {
-                debug!("IFR:End when parent_ref is none")
+                debug!("IFR:End when parent_ref is none");
             }
 
             // if its our own dummy opcode we've reached the top again and this form package has been parsed
@@ -816,7 +818,7 @@ pub fn handle_form_package(
             continue;
         }
 
-        handle_opcode(Rc::clone(&current_node)).context(format!(
+        handle_opcode(&current_node).context(format!(
             "Failed to parse op_code {:?} properly",
             &current_node.borrow().op_code,
         ))?;
@@ -838,7 +840,8 @@ pub fn handle_form_package(
     Ok(root)
 }
 
-fn handle_opcode(node: Rc<RefCell<IFROperation>>) -> Result<()> {
+#[allow(clippy::too_many_lines)]
+fn handle_opcode(node: &Rc<RefCell<IFROperation>>) -> Result<()> {
     let mut node = node.borrow_mut();
     let mut data_cursor = Cursor::new(&node.data);
 
@@ -997,7 +1000,7 @@ impl fmt::Debug for QuestionDescriptor {
             .field("value", &self.value)
             .field("help", &self.help)
             .field("possible_options", &self.possible_options)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -1009,6 +1012,7 @@ pub struct AnswerOption {
 
 // list_questions returns a list of QuestionDescriptors in a form package
 // node should be the form_package node
+#[allow(clippy::needless_pass_by_value)]
 pub fn list_questions(
     node: Rc<RefCell<IFROperation>>,
     string_packages: &Vec<HashMap<i32, String>>,
@@ -1025,7 +1029,7 @@ pub fn list_questions(
             );
 
             let varstore = find_corresponding_varstore(
-                Rc::clone(&node),
+                &node,
                 parsed.question_header().var_store_id,
             );
 
@@ -1040,7 +1044,7 @@ pub fn list_questions(
             );
 
             let varstore = find_corresponding_varstore(
-                Rc::clone(&node),
+                &node,
                 parsed.question_header().var_store_id,
             );
 
@@ -1061,7 +1065,7 @@ pub fn list_questions(
             );
 
             let varstore = find_corresponding_varstore(
-                Rc::clone(&node),
+                &node,
                 parsed.question_header().var_store_id,
             );
 
@@ -1084,6 +1088,7 @@ pub fn list_questions(
 /// `find_question` accepts the root node, `string_packages` and `possible_question_phrases`.
 /// `possible_question_phrases` is a vector of strings which represent variations of the
 /// same question. So if a single phrase matches then we assume that we have the answer.
+#[allow(clippy::needless_pass_by_value)]
 pub fn find_question<T>(
     node: Rc<RefCell<IFROperation>>,
     string_packages: &Vec<HashMap<i32, String>>,
@@ -1108,7 +1113,7 @@ where
 
                 if phrase.as_ref().eq_ignore_ascii_case(question.trim()) {
                     let varstore = find_corresponding_varstore(
-                        Rc::clone(&node),
+                        &node,
                         parsed.question_header().var_store_id,
                     );
 
@@ -1126,7 +1131,7 @@ where
 
                 if phrase.as_ref().eq_ignore_ascii_case(question.trim()) {
                     let varstore = find_corresponding_varstore(
-                        Rc::clone(&node),
+                        &node,
                         parsed.question_header().var_store_id,
                     );
 
@@ -1150,7 +1155,7 @@ where
 
                 if phrase.as_ref().eq_ignore_ascii_case(question.trim()) {
                     let varstore = find_corresponding_varstore(
-                        Rc::clone(&node),
+                        &node,
                         parsed.question_header().var_store_id,
                     );
 
@@ -1434,6 +1439,7 @@ fn try_read_answer_as_option<T>(
 }
 
 // display returns a String which is our tree like representation of a Forms package
+#[allow(clippy::too_many_lines, clippy::needless_pass_by_value)]
 pub fn display(
     node: Rc<RefCell<IFROperation>>,
     level: usize,
@@ -1491,7 +1497,7 @@ pub fn display(
             let mut answer_disp = String::new();
 
             let varstore =
-                find_corresponding_varstore(Rc::clone(&node), parsed.question_header().var_store_id);
+                find_corresponding_varstore(&node, parsed.question_header().var_store_id);
 
             match varstore {
                 Err(e) => {
@@ -1539,7 +1545,7 @@ pub fn display(
             let mut answer_disp = String::new();
 
             let varstore =
-                find_corresponding_varstore(Rc::clone(&node), parsed.question_header().var_store_id);
+                find_corresponding_varstore(&node, parsed.question_header().var_store_id);
                 match varstore {
                     Err(e) => {
 						answer_disp.push_str(format!("<VarStoreError: {e}>").as_str());
@@ -1586,7 +1592,7 @@ pub fn display(
             let mut answer_disp = String::new();
 
             let varstore =
-                find_corresponding_varstore(Rc::clone(&node), parsed.question_header().var_store_id);
+                find_corresponding_varstore(&node, parsed.question_header().var_store_id);
 
                 match varstore {
                     Err(e) => {
@@ -1746,7 +1752,7 @@ fn find_corresponding_string(string_id: u16, string_packages: &Vec<HashMap<i32, 
 /// `find_corresponding_varstore` bubble's up from current node till we find a `FormSet`.
 /// then it looks for varstores which will be `FormSet`'s children
 fn find_corresponding_varstore(
-    node: Rc<RefCell<IFROperation>>,
+    node: &Rc<RefCell<IFROperation>>,
     var_store_id: u16,
 ) -> Result<Box<dyn VariableStore>> {
     let current_node = node.borrow();
@@ -1771,7 +1777,7 @@ fn find_corresponding_varstore(
     match current_node.parent.as_ref() {
         Some(parent_ref) => match parent_ref.upgrade() {
             Some(parent_ref_rc) => {
-                find_corresponding_varstore(Rc::clone(&parent_ref_rc), var_store_id)
+                find_corresponding_varstore(&parent_ref_rc, var_store_id)
             }
             None => Err(anyhow!("could not upgrade parent_ref Weak<> to get Rc<>")),
         },

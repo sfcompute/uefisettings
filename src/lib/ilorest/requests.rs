@@ -101,7 +101,7 @@ impl Ilo5Dev {
             IloDevice::Ilo5Gen10Plus => {
                 redfish::get_attributes("/redfish/v1/systems/1/bios/oem/hpe/gubed")
             }
-            _ => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
+            IloDevice::Ilo4 => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
         }
     }
 
@@ -113,7 +113,7 @@ impl Ilo5Dev {
             IloDevice::Ilo5Gen10Plus => {
                 redfish::get_attributes("/redfish/v1/systems/1/bios/oem/hpe/gubed/settings/")
             }
-            _ => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
+            IloDevice::Ilo4 => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
         }
     }
 
@@ -133,7 +133,7 @@ impl Ilo5Dev {
                 attribute,
                 new_value,
             ),
-            _ => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
+            IloDevice::Ilo4 => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
         }
     }
 
@@ -147,7 +147,7 @@ impl Ilo5Dev {
             IloDevice::Ilo5Gen10Plus => {
                 redfish::get_attributes("/redfish/v1/systems/1/bios/oem/hpe/service")
             }
-            _ => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
+            IloDevice::Ilo4 => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
         }
     }
 
@@ -159,7 +159,7 @@ impl Ilo5Dev {
             IloDevice::Ilo5Gen10Plus => {
                 redfish::get_attributes("/redfish/v1/systems/1/bios/oem/hpe/service/settings/")
             }
-            _ => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
+            IloDevice::Ilo4 => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
         }
     }
 
@@ -179,7 +179,7 @@ impl Ilo5Dev {
                 attribute,
                 new_value,
             ),
-            _ => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
+            IloDevice::Ilo4 => Err(anyhow!("Invalid ilo_machine_type, Ilo5 required")),
         }
     }
 
@@ -295,6 +295,7 @@ mod redfish {
     // redfish 1.6+ is standardized
     // Right now this will only be used for Ilo5Dev{} but in the future Ilo6 could possibly re-use this
 
+    #[allow(clippy::wildcard_imports)]
     use super::*;
 
     pub fn get_attributes(endpoint: &str) -> Result<RedfishAttributes> {

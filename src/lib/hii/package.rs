@@ -13,7 +13,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
-use std::fs;
 use std::io::Seek;
 use std::rc::Rc;
 
@@ -247,6 +246,7 @@ pub fn read_db(source: &[u8]) -> Result<ParsedHiiDB> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
     use std::fs::File;
     use std::io::Read;
 

@@ -13,9 +13,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::env::var;
 use std::fmt;
-use std::fmt::format;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::Read;
@@ -34,7 +32,6 @@ use binrw::BinReaderExt;
 use binrw::BinResult;
 use binrw::BinWrite;
 use log::debug;
-use log::error;
 use thiserror::Error;
 
 use crate::chattr::EfivarsImmutabilityGuard;

@@ -190,10 +190,7 @@ impl RestClient {
         mut headers: HashMap<String, String>,
     ) -> Result<Vec<u8>> {
         let mut request_contents = format!("{method} {endpoint} HTTP/1.1\r\n");
-        headers.insert(
-            "Content-Length".to_string(),
-            body.len().to_string(),
-        );
+        headers.insert("Content-Length".to_string(), body.len().to_string());
 
         for (header_key, header_value) in headers {
             request_contents.push_str(&format!("{header_key}: {header_value}\r\n"));

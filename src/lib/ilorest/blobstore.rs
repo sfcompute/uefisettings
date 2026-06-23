@@ -287,11 +287,12 @@ impl<'a> Transport<'a> {
         let mut bytes_written: u32 = 0;
 
         while bytes_written < data_length {
-            let count: u32 = if (max_write_size - write_request_size) < (data_length - bytes_written) {
-                max_write_size - write_request_size
-            } else {
-                data_length - bytes_written
-            };
+            let count: u32 =
+                if (max_write_size - write_request_size) < (data_length - bytes_written) {
+                    max_write_size - write_request_size
+                } else {
+                    data_length - bytes_written
+                };
 
             let write_blob_size = bytes_written;
 
@@ -345,9 +346,7 @@ impl<'a> Transport<'a> {
 
                 Ok(recv_buf)
             }
-            Err(status_code) => {
-                Err(anyhow!("Unexpected Status code: {}", status_code))
-            }
+            Err(status_code) => Err(anyhow!("Unexpected Status code: {}", status_code)),
         }
     }
 }

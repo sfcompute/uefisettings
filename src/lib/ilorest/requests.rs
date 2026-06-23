@@ -295,7 +295,7 @@ mod redfish {
     // redfish 1.6+ is standardized
     // Right now this will only be used for Ilo5Dev{} but in the future Ilo6 could possibly re-use this
 
-    use super::{anyhow, debug, Result, RedfishAttributes, RestClient, find_lib_location, HTTPStatusCode, RedfishSettings, Context, remove_null_bytes, RedfishUpdateAttribute, HashMap, Value, RedfishPatchResult, SUCCESS_MSG};
+    use super::*;
 
     pub fn get_attributes(endpoint: &str) -> Result<RedfishAttributes> {
         let client = RestClient::new(&find_lib_location()?);

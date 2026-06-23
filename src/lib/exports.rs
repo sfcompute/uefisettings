@@ -20,7 +20,6 @@ use anyhow::Context;
 use anyhow::Result;
 use log::debug;
 use serde_json::Value;
-
 use uefisettings_backend_thrift::Backend;
 use uefisettings_backend_thrift::GetResponse;
 use uefisettings_backend_thrift::GetResponseList;
@@ -434,7 +433,7 @@ impl SettingsBackend for IloBackend {
                 is_translated,
                 question: Question {
                     name: translated_question.clone(), // real question that was sent to ilo
-                    answer: new_value.to_owned(),         // canonical answer
+                    answer: new_value.to_owned(),      // canonical answer
                     ..Default::default()
                 },
                 modified: true,
@@ -461,7 +460,7 @@ impl SettingsBackend for IloBackend {
                     is_translated,
                     question: Question {
                         name: translated_question.clone(), // real question that was sent to ilo
-                        answer: new_value.to_owned(),         // canonical answer
+                        answer: new_value.to_owned(),      // canonical answer
                         ..Default::default()
                     },
                     modified: true,
@@ -487,7 +486,7 @@ impl SettingsBackend for IloBackend {
                     is_translated,
                     question: Question {
                         name: translated_question.clone(), // real question that was sent to ilo
-                        answer: new_value.to_owned(),         // canonical answer
+                        answer: new_value.to_owned(),      // canonical answer
                         ..Default::default()
                     },
                     modified: true,
@@ -568,7 +567,7 @@ impl SettingsBackend for IloBackend {
 }
 
 /// auto-identify backend and get hardware/bios-information
-#[must_use] 
+#[must_use]
 pub fn identify_machine() -> MachineInfo {
     let mut backend = BTreeSet::new();
 

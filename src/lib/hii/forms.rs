@@ -288,8 +288,7 @@ impl fmt::Debug for IFROperation {
     }
 }
 
-#[derive(Debug)]
-#[derive(Default)]
+#[derive(Debug, Default)]
 #[allow(dead_code)]
 pub enum ParsedOperation {
     FormSet(FormSet),
@@ -492,7 +491,7 @@ trait VariableStore {
             self.store_filename()
         ))?;
         let mut buf = vec![0u8; self.size().into()];
-        debug!("buffer size: {}",self.size());
+        debug!("buffer size: {}", self.size());
         // only read as much as we require
         file.read_exact(&mut buf).context(format!(
             "failed to read bytes from sysfs efivars '{}' of size specified by varstore in hiidb",
@@ -519,8 +518,9 @@ trait VariableStore {
 
         let store_filename = self.store_filename();
 
-        let mut file_ro = File::open(&store_filename)
-            .context(format!("Failed to open efivarfs file '{store_filename}' to get varstore bytes"))?;
+        let mut file_ro = File::open(&store_filename).context(format!(
+            "Failed to open efivarfs file '{store_filename}' to get varstore bytes"
+        ))?;
 
         let mut file_contents = Vec::new();
         file_ro
@@ -799,7 +799,9 @@ pub fn handle_form_package(
                     "Inside the IFR:End case. Op Code: {:?}",
                     current_scope.borrow().op_code
                 );
-            } else { debug!("IFR:End when parent_ref is none") }
+            } else {
+                debug!("IFR:End when parent_ref is none")
+            }
 
             // if its our own dummy opcode we've reached the top again and this form package has been parsed
             if current_scope.borrow().op_code == IFROpCode::Unknown(DUMMY_OPCODE) {
@@ -1295,8 +1297,7 @@ fn handle_oneof(
 
             let opt = AnswerOption {
                 raw_value: o.value,
-                value: find_corresponding_string(o.option_string_id, string_packages)
-                    .to_string(),
+                value: find_corresponding_string(o.option_string_id, string_packages).to_string(),
             };
 
             if !varstore_not_found && current_value == chosen_value && !found_option {
@@ -1308,9 +1309,9 @@ fn handle_oneof(
             possible_options.push(opt);
         }
     }
-	if answer.is_empty() {
-		answer.push_str("Unknown");
-	}
+    if answer.is_empty() {
+        answer.push_str("Unknown");
+    }
 
     let res = QuestionDescriptor {
         question: question.trim().to_string(),
@@ -1353,13 +1354,25 @@ fn handle_numeric(
                     try_read_answer_as_string::<u8>(&parsed.question_header(), &bytes, &mut answer);
                 }
                 Range::Range16(_) => {
-                    try_read_answer_as_string::<u16>(&parsed.question_header(), &bytes, &mut answer);
+                    try_read_answer_as_string::<u16>(
+                        &parsed.question_header(),
+                        &bytes,
+                        &mut answer,
+                    );
                 }
                 Range::Range32(_) => {
-                    try_read_answer_as_string::<u32>(&parsed.question_header(), &bytes, &mut answer);
+                    try_read_answer_as_string::<u32>(
+                        &parsed.question_header(),
+                        &bytes,
+                        &mut answer,
+                    );
                 }
                 Range::Range64(_) => {
-                    try_read_answer_as_string::<u64>(&parsed.question_header(), &bytes, &mut answer);
+                    try_read_answer_as_string::<u64>(
+                        &parsed.question_header(),
+                        &bytes,
+                        &mut answer,
+                    );
                 }
             },
         },
@@ -1393,7 +1406,15 @@ where
     let extracted_data: Result<T> = extract_efi_data(offset, bytes);
     match extracted_data {
         Ok(a) => ans.push_str(format!("{a}").as_str()),
-        Err(e) => ans.push_str(format!("<ExtractEFIDataError: {} (offset: {}; buflen: {})>", e, offset, bytes.len()).as_str())
+        Err(e) => ans.push_str(
+            format!(
+                "<ExtractEFIDataError: {} (offset: {}; buflen: {})>",
+                e,
+                offset,
+                bytes.len()
+            )
+            .as_str(),
+        ),
     }
 }
 
@@ -1702,10 +1723,7 @@ pub fn change_value(
     Ok(changed)
 }
 
-fn find_corresponding_string(
-    string_id: u16,
-    string_packages: &Vec<HashMap<i32, String>>,
-) -> &str {
+fn find_corresponding_string(string_id: u16, string_packages: &Vec<HashMap<i32, String>>) -> &str {
     // TODO: accept language pack parameter later
     // it defaults to the first language pack it can find and the first one is en-US
 
@@ -1738,14 +1756,12 @@ fn find_corresponding_varstore(
 
         for child in &current_node.children {
             match &child.borrow().parsed_data {
-                ParsedOperation::VarStore(v)
-                    if v.var_store_id == var_store_id => {
-                        return Ok(Box::new(v.clone()));
-                    }
-                ParsedOperation::VarStoreEfi(v)
-                    if v.var_store_id == var_store_id => {
-                        return Ok(Box::new(v.clone()));
-                    }
+                ParsedOperation::VarStore(v) if v.var_store_id == var_store_id => {
+                    return Ok(Box::new(v.clone()));
+                }
+                ParsedOperation::VarStoreEfi(v) if v.var_store_id == var_store_id => {
+                    return Ok(Box::new(v.clone()));
+                }
                 _ => {}
             }
         }

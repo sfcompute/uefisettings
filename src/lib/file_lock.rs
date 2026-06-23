@@ -48,12 +48,10 @@ impl FileLock {
         self.file_descriptor = file.into_raw_fd();
 
         match flock(self.file_descriptor, FlockArg::LockExclusiveNonblock) {
-            Err(_) => {
-                Err(anyhow!(format!(
-                    "failed to get lock on fd {} path {}",
-                    &self.file_descriptor, &self.path
-                )))
-            }
+            Err(_) => Err(anyhow!(format!(
+                "failed to get lock on fd {} path {}",
+                &self.file_descriptor, &self.path
+            ))),
             Ok(()) => Ok(()),
         }
     }

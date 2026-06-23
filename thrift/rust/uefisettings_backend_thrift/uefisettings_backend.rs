@@ -143,6 +143,7 @@ pub mod types {
     pub struct HiiStringsPackage {
         pub package_list: ::std::string::String,
         pub string_package: ::std::collections::BTreeMap<::std::primitive::i32, ::std::string::String>,
+        pub language: ::std::string::String,
         // This field forces `..Default::default()` when instantiating this
         // struct, to make code future-proof against new fields added later to
         // the definition in Thrift. If you don't want this, add the annotation
@@ -1104,6 +1105,7 @@ pub mod types {
             Self {
                 package_list: ::std::default::Default::default(),
                 string_package: ::std::default::Default::default(),
+                language: ::std::default::Default::default(),
                 _dot_dot_Default_default: self::dot_dot::OtherFields(()),
             }
         }
@@ -1115,6 +1117,7 @@ pub mod types {
                 .debug_struct("HiiStringsPackage")
                 .field("package_list", &self.package_list)
                 .field("string_package", &self.string_package)
+                .field("language", &self.language)
                 .finish()
         }
     }
@@ -1138,6 +1141,9 @@ pub mod types {
             p.write_field_begin("string_package", ::fbthrift::TType::Map, 2);
             ::fbthrift::Serialize::write(&self.string_package, p);
             p.write_field_end();
+            p.write_field_begin("language", ::fbthrift::TType::String, 3);
+            ::fbthrift::Serialize::write(&self.language, p);
+            p.write_field_end();
             p.write_field_stop();
             p.write_struct_end();
         }
@@ -1151,9 +1157,11 @@ pub mod types {
             static FIELDS: &[::fbthrift::Field] = &[
                 ::fbthrift::Field::new("package_list", ::fbthrift::TType::String, 1),
                 ::fbthrift::Field::new("string_package", ::fbthrift::TType::Map, 2),
+                ::fbthrift::Field::new("language", ::fbthrift::TType::String, 3),
             ];
             let mut field_package_list = ::std::option::Option::None;
             let mut field_string_package = ::std::option::Option::None;
+            let mut field_language = ::std::option::Option::None;
             let _ = p.read_struct_begin(|_| ())?;
             loop {
                 let (_, fty, fid) = p.read_field_begin(|_| (), FIELDS)?;
@@ -1161,6 +1169,7 @@ pub mod types {
                     (::fbthrift::TType::Stop, _) => break,
                     (::fbthrift::TType::String, 1) => field_package_list = ::std::option::Option::Some(::fbthrift::Deserialize::read(p)?),
                     (::fbthrift::TType::Map, 2) => field_string_package = ::std::option::Option::Some(::fbthrift::Deserialize::read(p)?),
+                    (::fbthrift::TType::String, 3) => field_language = ::std::option::Option::Some(::fbthrift::Deserialize::read(p)?),
                     (fty, _) => p.skip(fty)?,
                 }
                 p.read_field_end()?;
@@ -1169,6 +1178,7 @@ pub mod types {
             ::std::result::Result::Ok(Self {
                 package_list: field_package_list.unwrap_or_default(),
                 string_package: field_string_package.unwrap_or_default(),
+                language: field_language.unwrap_or_default(),
                 _dot_dot_Default_default: self::dot_dot::OtherFields(()),
             })
         }

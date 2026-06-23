@@ -11,7 +11,6 @@
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 use std::fmt::Display;
@@ -38,6 +37,7 @@ use crate::chattr::EfivarsImmutabilityGuard;
 use crate::file_lock::FileLock;
 use crate::hii::efivarfs::EfivarsMountGuard;
 use crate::hii::package::Guid;
+use crate::hii::package::StringMap;
 
 const DUMMY_OPCODE: u8 = 0xFFu8; // doesn't correspond to any known IFROpCode
 
@@ -1015,7 +1015,7 @@ pub struct AnswerOption {
 #[allow(clippy::needless_pass_by_value)]
 pub fn list_questions(
     node: Rc<RefCell<IFROperation>>,
-    string_packages: &Vec<HashMap<i32, String>>,
+    string_packages: &Vec<StringMap>,
 ) -> Vec<QuestionDescriptor> {
     let mut res = Vec::new();
 
@@ -1091,7 +1091,7 @@ pub fn list_questions(
 #[allow(clippy::needless_pass_by_value)]
 pub fn find_question<T>(
     node: Rc<RefCell<IFROperation>>,
-    string_packages: &Vec<HashMap<i32, String>>,
+    string_packages: &Vec<StringMap>,
     possible_question_phrases: &HashSet<T>,
 ) -> Option<QuestionDescriptor>
 where
@@ -1186,7 +1186,7 @@ fn handle_checkbox(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &CheckBox,
     question: &str,
-    string_packages: &Vec<HashMap<i32, String>>,
+    string_packages: &Vec<StringMap>,
     current_node: &std::cell::Ref<IFROperation>,
 ) -> QuestionDescriptor {
     let mut answer = String::new();
@@ -1227,7 +1227,7 @@ fn handle_oneof(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &OneOf,
     node: &Rc<RefCell<IFROperation>>,
-    string_packages: &Vec<HashMap<i32, String>>,
+    string_packages: &Vec<StringMap>,
     question: &str,
     current_node: &std::cell::Ref<IFROperation>,
 ) -> QuestionDescriptor {
@@ -1341,7 +1341,7 @@ fn handle_numeric(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &Numeric,
     question: &str,
-    string_packages: &Vec<HashMap<i32, String>>,
+    string_packages: &Vec<StringMap>,
     current_node: &std::cell::Ref<IFROperation>,
 ) -> QuestionDescriptor {
     let mut answer = String::new();
@@ -1443,7 +1443,7 @@ fn try_read_answer_as_option<T>(
 pub fn display(
     node: Rc<RefCell<IFROperation>>,
     level: usize,
-    string_packages: &Vec<HashMap<i32, String>>,
+    string_packages: &Vec<super::package::StringMap>,
 ) -> Result<String> {
     let mut result = String::new();
     let extra_spaces = "    ".repeat(level);
@@ -1729,11 +1729,11 @@ pub fn change_value(
     Ok(changed)
 }
 
-fn find_corresponding_string(string_id: u16, string_packages: &Vec<HashMap<i32, String>>) -> &str {
+fn find_corresponding_string(string_id: u16, string_packages: &Vec<super::package::StringMap>) -> &str {
     // TODO: accept language pack parameter later
     // it defaults to the first language pack it can find and the first one is en-US
 
-    for package in string_packages {
+    for (_, package) in string_packages {
         if let Some(s) = package.get(&i32::from(string_id)) {
             return s;
         }

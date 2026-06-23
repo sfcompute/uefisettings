@@ -78,7 +78,7 @@ enum PackageType {
 }
 
 fn get_package_lists(source: &[u8]) -> Result<Vec<PackageList>> {
-    let mut db_cursor = Cursor::new(&source);
+    let mut db_cursor = Cursor::new(source);
 
     let mut package_lists: Vec<PackageList> = Vec::new();
 
@@ -177,8 +177,9 @@ impl fmt::Debug for Guid {
     }
 }
 
-type StringMap = HashMap<i32, String>;
+pub(crate) type StringMap = (Language, HashMap<i32, String>);
 type IFRNodeLink = Rc<RefCell<IFROperation>>;
+pub(crate) type Language = String;
 
 /// `ParsedHiiDB` is the 'result' superstruct which will
 /// hold the results of our parsed strings and forms packages.
@@ -275,6 +276,7 @@ mod tests {
                 .unwrap()
                 .get(0)
                 .unwrap()
+                .1
                 .get(&8)
                 .unwrap(),
             "MMIO Low Base"
@@ -287,6 +289,7 @@ mod tests {
                 .unwrap()
                 .get(0)
                 .unwrap()
+                .1
                 .len(),
             5714
         );

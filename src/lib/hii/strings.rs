@@ -75,9 +75,13 @@ enum StringBlockType {
     Unknown(u8),
 }
 
+type Language = String;
+
 pub fn handle_string_package(
     package_cursor: &mut Cursor<&Vec<u8>>,
-) -> Result<HashMap<i32, String>> {
+) -> Result<(Language, HashMap<i32, String>)> {
+    // starting position is actually 4 bytes more than the start of the header.
+    let starting_position = package_cursor.position();
     let string_header: StringPackageHeader = package_cursor
         .read_ne()
         .context("failed to parse string package header")?;
@@ -88,6 +92,8 @@ pub fn handle_string_package(
     );
 
     // Now parse the blocks
+    // I think we need to use the string_header.string_info_offset to get the proper starting poing
+    package_cursor.set_position(starting_position - 4 + string_header.string_info_offset as u64);
 
     let mut string_id_current: i32 = 1;
 
@@ -165,5 +171,5 @@ pub fn handle_string_package(
         }
     }
 
-    Ok(string_map)
+    Ok((string_header.language.to_string(), string_map))
 }

@@ -88,4 +88,5 @@ struct HiiDatabase {
 struct HiiStringsPackage {
   1: string package_list; // note that this isn't unique, multiple packages will be part of the same package list
   2: map<i32, string> string_package;
+  3: string language;
 }

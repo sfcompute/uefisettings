@@ -67,7 +67,7 @@ impl HiiBackend {
     /// `extract_db` extracts `HiiDB` from efivarfs and returns it in bytes (in `HiiDatabase`'s db field which is Vec<u8>)
     ///
     /// # Errors
-    /// Returns an error if the `HiiDB` cannot be read from efivarfs.
+    /// Returns an error if the HiiDB cannot be read from efivarfs.
     pub fn extract_db() -> Result<HiiDatabase> {
         let resp = HiiDatabase {
             db: extract::extract_db()?,
@@ -79,7 +79,7 @@ impl HiiBackend {
     /// `show_ifr` returns a human readable representation of the forms in Hii
     ///
     /// # Errors
-    /// Returns an error if the `HiiDB` bytes cannot be parsed.
+    /// Returns an error if the HiiDB bytes cannot be parsed.
     pub fn show_ifr(db_bytes: &[u8]) -> Result<HiiShowIfrResponse> {
         // We depend on the caller to provide us with the hiidb instead of calling extract here
         // because they might want to provide a file instead.
@@ -112,7 +112,7 @@ impl HiiBackend {
     /// list all strings-id, string pairs in `HiiDB`
     ///
     /// # Errors
-    /// Returns an error if the `HiiDB` bytes cannot be parsed.
+    /// Returns an error if the HiiDB bytes cannot be parsed.
     pub fn list_strings(db_bytes: &[u8]) -> Result<Vec<HiiStringsPackage>> {
         let mut resp = Vec::new();
         let parsed_db = package::read_db(db_bytes)?;
@@ -121,9 +121,10 @@ impl HiiBackend {
             for string_package in package_list {
                 let mut p = HiiStringsPackage {
                     package_list: guid.clone(),
+                    language: string_package.0,
                     ..Default::default()
                 };
-                for (string_id, string) in string_package {
+                for (string_id, string) in string_package.1 {
                     p.string_package.insert(string_id, string);
                 }
                 resp.push(p);
@@ -134,7 +135,7 @@ impl HiiBackend {
     }
 
     /// # Errors
-    /// Returns an error if the `HiiDB` bytes cannot be parsed.
+    /// Returns an error if the HiiDB bytes cannot be parsed.
     pub fn list_questions(db_bytes: &[u8]) -> Result<Vec<Question>> {
         let mut res = Vec::new();
         let parsed_db = package::read_db(db_bytes)?;
@@ -644,7 +645,6 @@ fn btreemap_from_redfish_attributes(attributes: RedfishAttributes) -> BTreeMap<S
     map
 }
 
-#[allow(clippy::needless_pass_by_value)]
 fn compare_redfish_attributes(
     old_attributes: RedfishAttributes,
     new_attributes: RedfishAttributes,

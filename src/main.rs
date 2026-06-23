@@ -49,7 +49,7 @@ struct UefiSettingsToolArgs {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Commands which work on machines exposing the UEFI HiiDB
+    /// Commands which work on machines exposing the UEFI `HiiDB`
     Hii(HiiCommand),
     /// Commands which work on machines having HPE's Ilo BMC
     Ilo(IloCommand),
@@ -109,26 +109,26 @@ enum HiiSubcommands {
     },
     /// Show a human readable representation of the Hii Forms
     ShowIFR {
-        /// If filename of HiiDB isn't specified then this tool will try to automatically extract it
+        /// If filename of `HiiDB` isn't specified then this tool will try to automatically extract it
         #[clap(parse(from_os_str), short, long)]
         filename: Option<PathBuf>,
     },
-    /// Dump HiiDB into a file
+    /// Dump `HiiDB` into a file
     ExtractDB {
         #[clap(parse(from_os_str))]
         filename: PathBuf,
     },
-    /// List all strings-id, string pairs in HiiDB
+    /// List all strings-id, string pairs in `HiiDB`
     ListStrings {
-        /// If filename of HiiDB isn't specified then this tool will try to automatically extract it
+        /// If filename of `HiiDB` isn't specified then this tool will try to automatically extract it
         #[clap(parse(from_os_str), short, long)]
         filename: Option<PathBuf>,
         #[clap(short = 'j', long = "json", action, value_parser)]
         json: bool,
     },
-    /// List questions HiiDB. Note that these are not all possible questions, because we don't parse certain non-useful question types.
+    /// List questions `HiiDB`. Note that these are not all possible questions, because we don't parse certain non-useful question types.
     ListQuestions {
-        /// If filename of HiiDB isn't specified then this tool will try to automatically extract it
+        /// If filename of `HiiDB` isn't specified then this tool will try to automatically extract it
         #[clap(parse(from_os_str), short, long)]
         filename: Option<PathBuf>,
         #[clap(short = 'j', long = "json", action, value_parser)]
@@ -179,7 +179,7 @@ fn main() -> Result<()> {
     if let Err(why) = handle_cmds(args) {
         print_with_style(
             uefisettings_backend_thrift::Error {
-                error_message: format!("{:#}", why),
+                error_message: format!("{why:#}"),
                 ..Default::default()
             },
             true,
@@ -343,6 +343,6 @@ where
         let buf = simplejson_protocol::serialize(result);
         println!("{}", String::from_utf8_lossy(&buf));
     } else {
-        println!("{:#?}", result);
+        println!("{result:#?}");
     }
 }

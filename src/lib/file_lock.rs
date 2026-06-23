@@ -54,7 +54,7 @@ impl FileLock {
                     &self.file_descriptor, &self.path
                 )))
             }
-            Ok(_) => Ok(()),
+            Ok(()) => Ok(()),
         }
     }
 }
@@ -62,7 +62,7 @@ impl Drop for FileLock {
     fn drop(&mut self) {
         if self.file_descriptor != -1 {
             if let Err(error_code) = flock(self.file_descriptor, FlockArg::UnlockNonblock) {
-                error!("file lock unlock failed with error code {}", error_code)
+                error!("file lock unlock failed with error code {}", error_code);
             }
         }
     }

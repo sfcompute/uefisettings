@@ -248,9 +248,9 @@ pub enum IFROpCode {
     Unknown(u8),
 }
 
-/// IFROperation is a node for a tree data structure.
-/// In HiiDB the opcodes + data are in a series/list.
-/// However, here we will use the open_scope boolean field + the end opcode (which marks end of scope)
+/// `IFROperation` is a node for a tree data structure.
+/// In `HiiDB` the opcodes + data are in a series/list.
+/// However, here we will use the `open_scope` boolean field + the end opcode (which marks end of scope)
 /// to generate an HTML like DOM tree.
 #[derive(BinRead)]
 #[br(little)]
@@ -520,28 +520,28 @@ trait VariableStore {
         let store_filename = self.store_filename();
 
         let mut file_ro = File::open(&store_filename)
-            .context(format!("Failed to open efivarfs file '{}' to get varstore bytes", store_filename))?;
+            .context(format!("Failed to open efivarfs file '{store_filename}' to get varstore bytes"))?;
 
         let mut file_contents = Vec::new();
         file_ro
             .read_to_end(&mut file_contents)
-            .context(format!("Failed to read efivarfs file '{}'", store_filename))?;
+            .context(format!("Failed to read efivarfs file '{store_filename}'"))?;
 
         let mut cursor = Cursor::new(file_contents);
-        cursor.seek(SeekFrom::Start(4 + offset as u64))?;
+        cursor.seek(SeekFrom::Start(4 + u64::from(offset)))?;
 
         match data {
             TypeValue::NumSize8(v) => {
-                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?
+                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?;
             }
             TypeValue::NumSize16(v) => {
-                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?
+                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?;
             }
             TypeValue::NumSize32(v) => {
-                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?
+                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?;
             }
             TypeValue::NumSize64(v) => {
-                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?
+                v.write_options(&mut cursor, binrw::endian::Endian::Little, ())?;
             }
             _ => {}
         }
@@ -702,8 +702,8 @@ pub struct Ref {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 #[allow(dead_code)]
-/// Any structs having TypeValue as a field can have value of one of these types
-/// depending on the value of the value_type
+/// Any structs having `TypeValue` as a field can have value of one of these types
+/// depending on the value of the `value_type`
 pub enum TypeValue {
     NumSize8(u8),
     NumSize16(u16),
@@ -789,20 +789,17 @@ pub fn handle_form_package(
         // end of current scope
         if current_node.borrow().op_code == IFROpCode::End {
             let current_scope_clone = Rc::clone(&current_scope);
-            match current_scope_clone.borrow().parent.as_ref() {
-                Some(parent_ref) => {
-                    if let Some(parent_ref_rc) = parent_ref.upgrade() {
-                        // current_scope = current_scope 's parent
-                        current_scope = Rc::clone(&parent_ref_rc);
-                    }
-
-                    debug!(
-                        "Inside the IFR:End case. Op Code: {:?}",
-                        current_scope.borrow().op_code
-                    );
+            if let Some(parent_ref) = current_scope_clone.borrow().parent.as_ref() {
+                if let Some(parent_ref_rc) = parent_ref.upgrade() {
+                    // current_scope = current_scope 's parent
+                    current_scope = Rc::clone(&parent_ref_rc);
                 }
-                None => debug!("IFR:End when parent_ref is none"),
-            };
+
+                debug!(
+                    "Inside the IFR:End case. Op Code: {:?}",
+                    current_scope.borrow().op_code
+                );
+            } else { debug!("IFR:End when parent_ref is none") }
 
             // if its our own dummy opcode we've reached the top again and this form package has been parsed
             if current_scope.borrow().op_code == IFROpCode::Unknown(DUMMY_OPCODE) {
@@ -1082,8 +1079,8 @@ pub fn list_questions(
     res
 }
 
-/// find_question accepts the root node, string_packages and possible_question_phrases.
-/// possible_question_phrases is a vector of strings which represent variations of the
+/// `find_question` accepts the root node, `string_packages` and `possible_question_phrases`.
+/// `possible_question_phrases` is a vector of strings which represent variations of the
 /// same question. So if a single phrase matches then we assume that we have the answer.
 pub fn find_question<T>(
     node: Rc<RefCell<IFROperation>>,
@@ -1188,11 +1185,11 @@ fn handle_checkbox(
     let mut answer = String::new();
     match &varstore {
         Err(e) => {
-            answer.push_str(format!("<VarStoreError: {}>", e).as_str());
+            answer.push_str(format!("<VarStoreError: {e}>").as_str());
         }
         Ok(vstore) => match vstore.read_bytes() {
             Err(e) => {
-                answer.push_str(format!("<VStoreError: {}>", e).as_str());
+                answer.push_str(format!("<VStoreError: {e}>").as_str());
             }
             Ok(bytes) => {
                 // for a checkbox size should be of type u8
@@ -1200,7 +1197,7 @@ fn handle_checkbox(
                     extract_efi_data::<u8>(parsed.question_header().var_store_info, &bytes);
                 match answer_raw {
                     Ok(a) => answer.push_str(format!("{a}").as_str()),
-                    Err(e) => answer.push_str(format!("ExtractEFIDataError: {}", e).as_str()),
+                    Err(e) => answer.push_str(format!("ExtractEFIDataError: {e}").as_str()),
                 }
             }
         },
@@ -1232,12 +1229,12 @@ fn handle_oneof(
     let mut varstore_not_found = false;
     match &varstore {
         Err(e) => {
-            answer.push_str(format!("<VarStoreError: {}>", e).as_str());
+            answer.push_str(format!("<VarStoreError: {e}>").as_str());
             varstore_not_found = true;
         }
         Ok(vstore) => match vstore.read_bytes() {
             Err(e) => {
-                answer.push_str(format!("<VStoreError: {}>", e).as_str());
+                answer.push_str(format!("<VStoreError: {e}>").as_str());
                 varstore_not_found = true;
             }
             Ok(bytes) => match &parsed.data {
@@ -1289,9 +1286,9 @@ fn handle_oneof(
     for child in &node.borrow().children {
         if let ParsedOperation::OneOfOption(o) = &child.borrow().parsed_data {
             let current_value: u64 = match o.value {
-                TypeValue::NumSize8(c) => c as u64,
-                TypeValue::NumSize16(c) => c as u64,
-                TypeValue::NumSize32(c) => c as u64,
+                TypeValue::NumSize8(c) => u64::from(c),
+                TypeValue::NumSize16(c) => u64::from(c),
+                TypeValue::NumSize32(c) => u64::from(c),
                 TypeValue::NumSize64(c) => c,
                 _ => 0,
             };
@@ -1345,24 +1342,24 @@ fn handle_numeric(
 
     match &varstore {
         Err(e) => {
-            answer.push_str(format!("<VarStoreError: {}>", e).as_str());
+            answer.push_str(format!("<VarStoreError: {e}>").as_str());
         }
         Ok(vstore) => match vstore.read_bytes() {
             Err(e) => {
-                answer.push_str(format!("<VStoreError: {}>", e).as_str());
+                answer.push_str(format!("<VStoreError: {e}>").as_str());
             }
             Ok(bytes) => match &parsed.data {
                 Range::Range8(_) => {
-                    try_read_answer_as_string::<u8>(&parsed.question_header(), &bytes, &mut answer)
+                    try_read_answer_as_string::<u8>(&parsed.question_header(), &bytes, &mut answer);
                 }
                 Range::Range16(_) => {
-                    try_read_answer_as_string::<u16>(&parsed.question_header(), &bytes, &mut answer)
+                    try_read_answer_as_string::<u16>(&parsed.question_header(), &bytes, &mut answer);
                 }
                 Range::Range32(_) => {
-                    try_read_answer_as_string::<u32>(&parsed.question_header(), &bytes, &mut answer)
+                    try_read_answer_as_string::<u32>(&parsed.question_header(), &bytes, &mut answer);
                 }
                 Range::Range64(_) => {
-                    try_read_answer_as_string::<u64>(&parsed.question_header(), &bytes, &mut answer)
+                    try_read_answer_as_string::<u64>(&parsed.question_header(), &bytes, &mut answer);
                 }
             },
         },
@@ -1429,7 +1426,7 @@ pub fn display(
     match &current_node.parsed_data {
         ParsedOperation::Placeholder => {
             if current_node.op_code == IFROpCode::Unknown(DUMMY_OPCODE) {
-                result.push_str(format!("{extra_spaces}OpCode: ROOT\n").as_str())
+                result.push_str(format!("{extra_spaces}OpCode: ROOT\n").as_str());
             }
         }
         ParsedOperation::Subtitle(parsed) => result.push_str(
@@ -1477,11 +1474,11 @@ pub fn display(
 
             match varstore {
                 Err(e) => {
-                    answer_disp.push_str(format!("<VarStoreError: {}>", e).as_str());
+                    answer_disp.push_str(format!("<VarStoreError: {e}>").as_str());
                 }
                 Ok(vstore) => match vstore.read_bytes() {
                     Err(e) => {
-                        answer_disp.push_str(format!("<VStoreError: {}>", e).as_str());
+                        answer_disp.push_str(format!("<VStoreError: {e}>").as_str());
                     },
                     Ok(bytes) => match &parsed.data {
                         Range::Range8(_) => {
@@ -1524,11 +1521,11 @@ pub fn display(
                 find_corresponding_varstore(Rc::clone(&node), parsed.question_header().var_store_id);
                 match varstore {
                     Err(e) => {
-						answer_disp.push_str(format!("<VarStoreError: {}>", e).as_str());
+						answer_disp.push_str(format!("<VarStoreError: {e}>").as_str());
                     }
                     Ok(vstore) => match vstore.read_bytes() {
                         Err(e) => {
-							answer_disp.push_str(format!("<VStoreError: {}>", e).as_str());
+							answer_disp.push_str(format!("<VStoreError: {e}>").as_str());
                         }
                         Ok(bytes) => match &parsed.data {
                             Range::Range8(_) => {
@@ -1572,11 +1569,11 @@ pub fn display(
 
                 match varstore {
                     Err(e) => {
-						answer_disp.push_str(format!("<VarStoreError: {}>", e).as_str());
+						answer_disp.push_str(format!("<VarStoreError: {e}>").as_str());
                     }
                     Ok(vstore) => match vstore.read_bytes() {
                         Err(e) => {
-							answer_disp.push_str(format!("<VStoreError: {}>", e).as_str());
+							answer_disp.push_str(format!("<VStoreError: {e}>").as_str());
                         },
                         Ok(bytes) => {
                             // for a checkbox size should be of type u8
@@ -1713,7 +1710,7 @@ fn find_corresponding_string(
     // it defaults to the first language pack it can find and the first one is en-US
 
     for package in string_packages {
-        if let Some(s) = package.get(&(string_id as i32)) {
+        if let Some(s) = package.get(&i32::from(string_id)) {
             return s;
         }
     }
@@ -1728,8 +1725,8 @@ fn find_corresponding_string(
     ""
 }
 
-/// find_corresponding_varstore bubble's up from current node till we find a FormSet.
-/// then it looks for varstores which will be FormSet's children
+/// `find_corresponding_varstore` bubble's up from current node till we find a `FormSet`.
+/// then it looks for varstores which will be `FormSet`'s children
 fn find_corresponding_varstore(
     node: Rc<RefCell<IFROperation>>,
     var_store_id: u16,
@@ -1766,7 +1763,7 @@ fn find_corresponding_varstore(
     }
 }
 
-/// extract_efi_data extracts data of type T at given offset from efivar bytes.
+/// `extract_efi_data` extracts data of type T at given offset from efivar bytes.
 /// The <T> type here is used to get the type (and thus size) of our answer.
 fn extract_efi_data<T>(offset: u16, bytes: &Vec<u8>) -> Result<T>
 where
@@ -1777,7 +1774,7 @@ where
     // values begin after that
 
     let mut cursor = Cursor::new(&bytes);
-    cursor.seek(SeekFrom::Current(4 + offset as i64))?;
+    cursor.seek(SeekFrom::Current(4 + i64::from(offset)))?;
 
     let answer: T = cursor.read_ne()?;
 

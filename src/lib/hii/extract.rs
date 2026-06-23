@@ -46,7 +46,7 @@ pub fn extract_db() -> Result<Vec<u8>> {
     let mut efivar_contents = Vec::new();
     efivar_file
         .read_to_end(&mut efivar_contents)
-        .context(format!("Failed to read efivar file, {}", OCP_HIIDB_PATH))?;
+        .context(format!("Failed to read efivar file, {OCP_HIIDB_PATH}"))?;
 
     let mut efivar_cursor = Cursor::new(&efivar_contents);
     let db_info: HiiDBEFIVar = efivar_cursor.read_ne()?;
@@ -54,7 +54,7 @@ pub fn extract_db() -> Result<Vec<u8>> {
     // Now that we have offset and size from the HiiDB efivar, use it to read DB from memory.
 
     let mut mem_file = File::open("/dev/mem").context("Failed to open /dev/mem")?;
-    mem_file.seek(SeekFrom::Start(db_info.address as u64))?;
+    mem_file.seek(SeekFrom::Start(u64::from(db_info.address)))?;
 
     let mut buf = vec![0u8; db_info.length.try_into()?];
     mem_file

@@ -43,7 +43,7 @@ impl EfivarsMountGuard {
                 original_flags & !MsFlags::MS_RDONLY | MsFlags::MS_REMOUNT,
                 None as Option<&str>,
             )
-            .context(format!("Failed to remount {} RW", EFIVARS_MOUNT_POINT))?
+            .context(format!("Failed to remount {EFIVARS_MOUNT_POINT} RW"))?;
         } else {
             debug!(
                 "{} is mounted read/write, skipping remount",

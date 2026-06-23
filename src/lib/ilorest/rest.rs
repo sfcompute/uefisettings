@@ -26,7 +26,7 @@ use crate::ilorest::chif::IloRestChifInterface;
 
 const MAX_ALLOWED_REQUEST_ATTEMPTS: u32 = 10;
 
-/// RestClient allows you to make GET/POST/PUT/PATCH requests to the ILO BMC's Redfish API over Blobstore2
+/// `RestClient` allows you to make GET/POST/PUT/PATCH requests to the ILO BMC's Redfish API over Blobstore2
 pub struct RestClient {
     lib_path: String,
 }
@@ -114,7 +114,7 @@ impl RestClient {
     // default_headers for creating a new REST request
     fn default_headers(&self) -> HashMap<String, String> {
         HashMap::from([
-            ("Host".to_string(), "".to_string()),
+            ("Host".to_string(), String::new()),
             ("Accept-Encoding".to_string(), "identity".to_string()),
             (
                 "Content-Type".to_string(),
@@ -189,16 +189,16 @@ impl RestClient {
         body: &str,
         mut headers: HashMap<String, String>,
     ) -> Result<Vec<u8>> {
-        let mut request_contents = format!("{} {} HTTP/1.1\r\n", method, endpoint);
+        let mut request_contents = format!("{method} {endpoint} HTTP/1.1\r\n");
         headers.insert(
             "Content-Length".to_string(),
             body.len().to_string(),
         );
 
         for (header_key, header_value) in headers {
-            request_contents.push_str(&format!("{}: {}\r\n", header_key, header_value));
+            request_contents.push_str(&format!("{header_key}: {header_value}\r\n"));
         }
-        request_contents.push_str(&format!("\r\n{}", body));
+        request_contents.push_str(&format!("\r\n{body}"));
 
         debug!("Sending request \n{}", request_contents);
 

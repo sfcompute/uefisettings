@@ -172,30 +172,30 @@ impl fmt::Display for Guid {
 
 impl fmt::Debug for Guid {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self)
+        write!(f, "{self}")
     }
 }
 
 type StringMap = HashMap<i32, String>;
 type IFRNodeLink = Rc<RefCell<IFROperation>>;
 
-/// ParsedHiiDB is the 'result' superstruct which will
+/// `ParsedHiiDB` is the 'result' superstruct which will
 /// hold the results of our parsed strings and forms packages.
 pub struct ParsedHiiDB {
-    /// HashMap<packagelist_guid_string, Vec<StringMap>>
+    /// `HashMap`<`packagelist_guid_string`, Vec<StringMap>>
     /// for each packagelist the key = packagelist guid string and val = vector of string package hashmaps
     /// each string package hashmap here has its key = string id and val = the string
     pub strings: HashMap<String, Vec<StringMap>>,
     pub forms: HashMap<String, Vec<IFRNodeLink>>,
 }
 
-/// read_db input (source) is a vector of u8 bytes
+/// `read_db` input (source) is a vector of u8 bytes
 /// In hiidb, we have package lists (with unique guids) which have multiple packages of different types including string, form and end type packages.
 /// For every package list, we will parse different packages. If package type is
 /// * string -> parse and save data
 /// * form -> parse and save data
 /// * something else (like fonts or animations) -> we don't care about them, so continue to the next package in the package list.
-///   In the end return a ParsedHiiDB struct which will have the parsed and saved data.
+///   In the end return a `ParsedHiiDB` struct which will have the parsed and saved data.
 pub fn read_db(source: &[u8]) -> Result<ParsedHiiDB> {
     let mut res = ParsedHiiDB {
         strings: HashMap::new(),

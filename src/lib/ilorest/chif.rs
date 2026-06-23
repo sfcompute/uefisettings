@@ -62,12 +62,12 @@ const CHIF_STATUS_CODE_SUCCESS: u32 = 0;
 // AccessDenied = 13,
 // InvalidArgument = 22 - not sure, just my guess after some experimentation
 
-/// IloRestChif holds functions which are exported by ilorest_chif.so
+/// `IloRestChif` holds functions which are exported by `ilorest_chif.so`
 /// ```no_run
 /// let lib = get_lib("/usr/lib64/ilorest_chif.so")?;
 /// let ilo = IloRestChif::new(&lib)?;
 /// ```
-/// This will load the ilorest_chif.so library, initialize it and create a new handle/connection to the ilo BMC.
+/// This will load the `ilorest_chif.so` library, initialize it and create a new handle/connection to the ilo BMC.
 pub struct IloRestChif<'a> {
     handle: *mut c_void,
     initialize: Symbol<'a, ChifInitializeFunction>,
@@ -182,10 +182,10 @@ impl<'a> IloRestChif<'a> {
                 get_finalize_request_size,
                 get_create_request_size,
                 get_key_info,
-                get_info_request_size,
-                get_read_response_size,
                 delete_blob,
                 get_delete_request_size,
+                get_info_request_size,
+                get_read_response_size,
             }
         };
 
@@ -193,7 +193,7 @@ impl<'a> IloRestChif<'a> {
 
         (lib_funcs.initialize)();
 
-        let status_code = (lib_funcs.create)(&(lib_funcs.handle));
+        let status_code = (lib_funcs.create)(&raw const (lib_funcs.handle));
         debug!("Create status code is {}", status_code);
 
         if status_code != CHIF_STATUS_CODE_SUCCESS {
@@ -207,13 +207,13 @@ impl<'a> IloRestChif<'a> {
     }
 }
 
-impl<'a> Drop for IloRestChif<'a> {
+impl Drop for IloRestChif<'_> {
     fn drop(&mut self) {
         let status_code = (self.close)(self.handle);
         debug!("Close status code is {}", status_code);
 
         if status_code != CHIF_STATUS_CODE_SUCCESS {
-            error!("Unexpected Status Code: {} during close", status_code)
+            error!("Unexpected Status Code: {} during close", status_code);
         }
     }
 }
@@ -452,7 +452,7 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
     }
 }
 
-/// IloRestChifInterface is a rusty interface to ilorest_chif functions
+/// `IloRestChifInterface` is a rusty interface to `ilorest_chif` functions
 #[allow(dead_code)]
 pub trait IloRestChifInterface {
     fn ping(&self) -> Result<(), u32>;
@@ -512,7 +512,7 @@ pub fn get_lib(libpath: &str) -> Result<Library> {
     Ok(unsafe { Library::new(libpath)? })
 }
 
-/// find_lib_location returns the location of the ilorest_chif shared object library file
+/// `find_lib_location` returns the location of the `ilorest_chif` shared object library file
 pub fn find_lib_location() -> Result<String> {
     let possible_locations = vec![
         "/usr/lib64",
@@ -522,7 +522,7 @@ pub fn find_lib_location() -> Result<String> {
     ];
 
     for location in &possible_locations {
-        let lib_path = format!("{}/ilorest_chif.so", location);
+        let lib_path = format!("{location}/ilorest_chif.so");
         if Path::new(&lib_path).exists() {
             debug!("using the shared object file at {}", lib_path);
             return Ok(lib_path);
@@ -532,7 +532,7 @@ pub fn find_lib_location() -> Result<String> {
     Err(anyhow!("Unable to find location of ilorest_chif.so"))
 }
 
-/// check_ilo_connectivity pings the BMC to test connectivity
+/// `check_ilo_connectivity` pings the BMC to test connectivity
 pub fn check_ilo_connectivity() -> Result<()> {
     // just the existance of the library isn't enough, we need to ping the Ilo BMC itself
     let lib = get_lib(&find_lib_location()?)?;

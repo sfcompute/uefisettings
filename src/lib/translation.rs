@@ -29,7 +29,7 @@ pub enum HiiTranslation {
     },
 }
 
-/// get_qa_variations_hii translates canonical questions and answers into possible hii variants
+/// `get_qa_variations_hii` translates canonical questions and answers into possible hii variants
 /// If any part isn't in the translation database, it doesn't fail it just returns the original values in required form.
 /// Ex: the canonical question "Hyper Threading" -> ["Hyper-Threading", "Enable LP", "Hyper-Threading [ALL]"]
 /// and for it the canonical answer "Enabled" -> ["Enabled", "Enable"].
@@ -86,14 +86,14 @@ pub enum IloTranslation {
     },
 }
 
-/// get_qa_variations_ilo translates canonical questions and answers into ilo variants
+/// `get_qa_variations_ilo` translates canonical questions and answers into ilo variants
 /// If any part isn't in the translation database, it doesn't fail it just returns the original values.
-/// Ex: the canonical question "TPM State" -> "TpmState" and for it the canonical answer "Enabled" -> "PresentEnabled".
+/// Ex: the canonical question "TPM State" -> "`TpmState`" and for it the canonical answer "Enabled" -> "`PresentEnabled`".
 pub fn get_qa_variations_ilo(question: &str, answer: &str) -> IloTranslation {
     if let Some(question_mapping) = translation_db.get(question) {
         if let Some(ilo_question_mapping) = &question_mapping.ilo_question {
             // use translated question name instead of canonical name
-            let translated_question = ilo_question_mapping.question.to_owned();
+            let translated_question = ilo_question_mapping.question.clone();
             let mut translated_answer = answer.to_owned();
 
             // use translated answer to send to ilo instead of canonical answer
@@ -118,7 +118,7 @@ pub fn get_qa_variations_ilo(question: &str, answer: &str) -> IloTranslation {
     }
 }
 
-/// translate_response: If the question is using canonical spelling then we should
+/// `translate_response`: If the question is using canonical spelling then we should
 /// use the canonical spelling of the answer in the response to the user
 /// i.e. basically reverse replacement from real answer to canonical answer
 /// if something wasn't found in the db then return the real/original answer

@@ -48,7 +48,7 @@ use crate::translation::translate_response;
 use crate::translation::HiiTranslation;
 use crate::translation::IloTranslation;
 
-/// SettingsBackend is a trait which should be satisfied by all backends (like ilo, hii)
+/// `SettingsBackend` is a trait which should be satisfied by all backends (like ilo, hii)
 pub trait SettingsBackend {
     /// set changes the value of the UEFI question/attribute
     fn set(question: &str, new_value: &str, selector: Option<&str>) -> Result<SetResponseList>;
@@ -59,7 +59,7 @@ pub trait SettingsBackend {
 pub struct HiiBackend {}
 
 impl HiiBackend {
-    /// extract_db extracts HiiDB from efivarfs and returns it in bytes (in HiiDatabase's db field which is Vec<u8>)
+    /// `extract_db` extracts `HiiDB` from efivarfs and returns it in bytes (in `HiiDatabase`'s db field which is Vec<u8>)
     pub fn extract_db() -> Result<HiiDatabase> {
         let resp = HiiDatabase {
             db: extract::extract_db()?,
@@ -68,7 +68,7 @@ impl HiiBackend {
         Ok(resp)
     }
 
-    /// show_ifr returns a human readable representation of the forms in Hii
+    /// `show_ifr` returns a human readable representation of the forms in Hii
     pub fn show_ifr(db_bytes: &[u8]) -> Result<HiiShowIfrResponse> {
         // We depend on the caller to provide us with the hiidb instead of calling extract here
         // because they might want to provide a file instead.
@@ -86,7 +86,7 @@ impl HiiBackend {
                     parsed_db
                         .strings
                         .get(&guid)
-                        .context(format!("Failed to get string packages using GUID {}", guid))?,
+                        .context(format!("Failed to get string packages using GUID {guid}"))?,
                 )?);
             }
         }
@@ -98,7 +98,7 @@ impl HiiBackend {
         Ok(resp)
     }
 
-    /// list all strings-id, string pairs in HiiDB
+    /// list all strings-id, string pairs in `HiiDB`
     pub fn list_strings(db_bytes: &[u8]) -> Result<Vec<HiiStringsPackage>> {
         let mut resp = Vec::new();
         let parsed_db = package::read_db(db_bytes)?;
@@ -106,7 +106,7 @@ impl HiiBackend {
         for (guid, package_list) in parsed_db.strings {
             for string_package in package_list {
                 let mut p = HiiStringsPackage {
-                    package_list: guid.to_owned(),
+                    package_list: guid.clone(),
                     ..Default::default()
                 };
                 for (string_id, string) in string_package {
@@ -126,7 +126,7 @@ impl HiiBackend {
             let string_packages = parsed_db
                 .strings
                 .get(&guid)
-                .context(format!("Failed to get string packages using GUID {}", guid))?;
+                .context(format!("Failed to get string packages using GUID {guid}"))?;
 
             for form_package in package_list {
                 //  TODO: show form name, package list guid in the final response as well
@@ -181,7 +181,7 @@ impl SettingsBackend for HiiBackend {
             let string_packages = parsed_db
                 .strings
                 .get(&guid)
-                .context(format!("Failed to get string packages using GUID {}", guid))?;
+                .context(format!("Failed to get string packages using GUID {guid}"))?;
 
             for form_package in package_list {
                 // try to find the question
@@ -193,7 +193,9 @@ impl SettingsBackend for HiiBackend {
                     // (example whatever matches from [Enabled, Enable])
                     // else try setting the new_value because it might be some arbitrary value like a number
                     // (will return error if doesn't match constraints)
-                    if !(question_descriptor.possible_options.is_empty()) {
+                    if (question_descriptor.possible_options.is_empty()) {
+                        modified = forms::change_value(&question_descriptor, new_value)?;
+                    } else {
                         // This is different from modified because if varstore doesn't exist for the question
                         // then we can't set answers but it isn't an error.
                         let mut found_option = false;
@@ -215,13 +217,11 @@ impl SettingsBackend for HiiBackend {
                         if !found_option {
                             return Err(forms::ChangeValueError::InvalidOption.into());
                         }
-                    } else {
-                        modified = forms::change_value(&question_descriptor, new_value)?
                     }
 
                     if modified {
                         let mut set_resp = SetResponse {
-                            selector: guid.to_owned(),
+                            selector: guid.clone(),
                             backend: Backend::Hii,
                             is_translated,
                             question: Question {
@@ -235,7 +235,7 @@ impl SettingsBackend for HiiBackend {
                         };
 
                         for opt in question_descriptor.possible_options {
-                            set_resp.question.options.push(opt.value)
+                            set_resp.question.options.push(opt.value);
                         }
 
                         resp.push(set_resp);
@@ -278,11 +278,11 @@ impl SettingsBackend for HiiBackend {
                     parsed_db
                         .strings
                         .get(&guid)
-                        .context(format!("Failed to get string packages using GUID {}", guid))?,
+                        .context(format!("Failed to get string packages using GUID {guid}"))?,
                     &question_variations,
                 ) {
                     let mut get_resp = GetResponse {
-                        selector: guid.to_owned(),
+                        selector: guid.clone(),
                         backend: Backend::Hii,
                         is_translated,
                         // mapping the hii module's QuestionDescriptor to thrift codegen's Question
@@ -301,10 +301,10 @@ impl SettingsBackend for HiiBackend {
                     }
 
                     for opt in question_descriptor.possible_options {
-                        get_resp.question.options.push(opt.value)
+                        get_resp.question.options.push(opt.value);
                     }
 
-                    resp.push(get_resp)
+                    resp.push(get_resp);
                 }
             }
         }
@@ -433,7 +433,7 @@ impl SettingsBackend for IloBackend {
                 backend: Backend::Ilo,
                 is_translated,
                 question: Question {
-                    name: translated_question.to_owned(), // real question that was sent to ilo
+                    name: translated_question.clone(), // real question that was sent to ilo
                     answer: new_value.to_owned(),         // canonical answer
                     ..Default::default()
                 },
@@ -441,7 +441,7 @@ impl SettingsBackend for IloBackend {
                 ..Default::default()
             };
 
-            resp.push(set_resp)
+            resp.push(set_resp);
         }
 
         if machine_type != IloDevice::Ilo4 {
@@ -460,7 +460,7 @@ impl SettingsBackend for IloBackend {
                     backend: Backend::Ilo,
                     is_translated,
                     question: Question {
-                        name: translated_question.to_owned(), // real question that was sent to ilo
+                        name: translated_question.clone(), // real question that was sent to ilo
                         answer: new_value.to_owned(),         // canonical answer
                         ..Default::default()
                     },
@@ -468,7 +468,7 @@ impl SettingsBackend for IloBackend {
                     ..Default::default()
                 };
 
-                resp.push(set_resp)
+                resp.push(set_resp);
             }
 
             // Service Settings
@@ -486,7 +486,7 @@ impl SettingsBackend for IloBackend {
                     backend: Backend::Ilo,
                     is_translated,
                     question: Question {
-                        name: translated_question.to_owned(), // real question that was sent to ilo
+                        name: translated_question.clone(), // real question that was sent to ilo
                         answer: new_value.to_owned(),         // canonical answer
                         ..Default::default()
                     },
@@ -494,7 +494,7 @@ impl SettingsBackend for IloBackend {
                     ..Default::default()
                 };
 
-                resp.push(set_resp)
+                resp.push(set_resp);
             }
         }
 
@@ -544,7 +544,7 @@ impl SettingsBackend for IloBackend {
                     backend: Backend::Ilo,
                     is_translated,
                     question: Question {
-                        name: translated_question.to_owned(), // the question that was sent to ilo
+                        name: translated_question.clone(), // the question that was sent to ilo
                         answer: s.to_owned(),
                         ..Default::default()
                     },
@@ -556,7 +556,7 @@ impl SettingsBackend for IloBackend {
                         translate_response(question, &get_resp.question.answer, Backend::Ilo);
                 }
 
-                resp.push(get_resp)
+                resp.push(get_resp);
             }
         }
 
@@ -568,6 +568,7 @@ impl SettingsBackend for IloBackend {
 }
 
 /// auto-identify backend and get hardware/bios-information
+#[must_use] 
 pub fn identify_machine() -> MachineInfo {
     let mut backend = BTreeSet::new();
 
@@ -599,14 +600,14 @@ pub fn identify_machine() -> MachineInfo {
     }
 }
 
-/// read_file_contents is a wrapper over std::fs::read_to_string but it
+/// `read_file_contents` is a wrapper over `std::fs::read_to_string` but it
 /// returns an empty string if file can't be read / doesn't exist
 fn read_file_contents(file_path: &Path) -> String {
     match fs::read_to_string(file_path) {
         Ok(contents) => contents.trim().to_owned(),
         Err(why) => {
             debug!("Can't read {:?} because {}", file_path, why);
-            "".to_owned()
+            String::new()
         }
     }
 }

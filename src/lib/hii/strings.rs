@@ -134,7 +134,7 @@ pub fn handle_string_package(
                     }
                     Ok(p) => p,
                 };
-                string_id_current += skip_count as i32;
+                string_id_current += i32::from(skip_count);
                 debug!("Skip count is {}", skip_count);
             }
             StringBlockType::Skip1 => {
@@ -145,7 +145,7 @@ pub fn handle_string_package(
                     }
                     Ok(p) => p,
                 };
-                string_id_current += skip_count as i32;
+                string_id_current += i32::from(skip_count);
                 debug!("Skip count is {}", skip_count);
             }
             StringBlockType::End => {

@@ -42,7 +42,7 @@ enum ResponseReceiveMode {
     FragmentedResponse = 1,
 }
 
-/// Transport uses the rust bindings to ilorest_chif.so to handle Blobstore2 logic
+/// Transport uses the rust bindings to `ilorest_chif.so` to handle Blobstore2 logic
 /// so the user can make requests without worrying about fragmented reads/writes, packet handling, etc.
 /// Usage:
 /// ```no_run
@@ -61,7 +61,7 @@ impl<'a> Transport<'a> {
         Ok(Self { ilo })
     }
 
-    /// make_request isn't really a REST request, it just receives some bytes,
+    /// `make_request` isn't really a REST request, it just receives some bytes,
     /// sends them to the ilo BMC using Blobstore2 transport logic
     /// and returns bytes
     pub fn make_request(&self, request: &[u8]) -> Result<Vec<u8>> {
@@ -223,7 +223,7 @@ impl<'a> Transport<'a> {
         Ok(blobsize)
     }
 
-    /// finalize_multi_packet_write has to be executed after you've written your data to your blobstore2 entry
+    /// `finalize_multi_packet_write` has to be executed after you've written your data to your blobstore2 entry
     fn finalize_multi_packet_write(
         &self,
 
@@ -245,7 +245,7 @@ impl<'a> Transport<'a> {
         Ok(())
     }
 
-    /// create_blob_entry creates an entry in blobstore2 key-val store
+    /// `create_blob_entry` creates an entry in blobstore2 key-val store
     /// you have to write to the entry later
     fn create_blob_entry(&self, request_key: &CStr, namespace: &CStr) -> Result<()> {
         debug!(
@@ -276,7 +276,7 @@ impl<'a> Transport<'a> {
         Ok(())
     }
 
-    /// write_multi_packet writes your data to blobstore2's key value store if you've created a blob entry already.
+    /// `write_multi_packet` writes your data to blobstore2's key value store if you've created a blob entry already.
     /// Note that you still need to finalize your write after this function.
     fn write_multi_packet(&self, data: &[u8], request_key: &CStr, namespace: &CStr) -> Result<()> {
         let max_write_size = self.ilo.get_max_write_size();

@@ -48,7 +48,7 @@ pub enum IloDevice {
     Ilo5Gen10Plus,
 }
 
-/// identify_hpe_machine_type tries to identify the kind of HPE machine.
+/// `identify_hpe_machine_type` tries to identify the kind of HPE machine.
 /// However, this is just the best guess. Even if we can't correctly differentiate between
 /// ilo5 with Gen10 vs ilo5 with Gen10+ or some other variant, we can still get/set bios settings.
 pub fn identify_hpe_machine_type() -> Result<IloDevice> {
@@ -76,8 +76,8 @@ pub fn identify_hpe_machine_type() -> Result<IloDevice> {
     Ok(IloDevice::Ilo5)
 }
 
-/// get_device_instance returns either Ilo4Dev{} or Ilo5Dev{} (both implement the IloDev trait)
-/// based on ilo_machine_type
+/// `get_device_instance` returns either `Ilo4Dev`{} or `Ilo5Dev`{} (both implement the `IloDev` trait)
+/// based on `ilo_machine_type`
 pub fn get_device_instance(ilo_machine_type: IloDevice) -> Box<dyn IloDev> {
     match ilo_machine_type {
         IloDevice::Ilo4 => Box::new(Ilo4Dev {}),
@@ -295,7 +295,7 @@ mod redfish {
     // redfish 1.6+ is standardized
     // Right now this will only be used for Ilo5Dev{} but in the future Ilo6 could possibly re-use this
 
-    use super::*;
+    use super::{anyhow, debug, Result, RedfishAttributes, RestClient, find_lib_location, HTTPStatusCode, RedfishSettings, Context, remove_null_bytes, RedfishUpdateAttribute, HashMap, Value, RedfishPatchResult, SUCCESS_MSG};
 
     pub fn get_attributes(endpoint: &str) -> Result<RedfishAttributes> {
         let client = RestClient::new(&find_lib_location()?);

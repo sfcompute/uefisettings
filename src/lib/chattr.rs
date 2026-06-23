@@ -57,7 +57,7 @@ pub fn get_all_attrs(path: impl AsRef<Path>) -> Result<i64> {
     let mut attrs = 0i64;
     // SAFETY c_long is guaranteed to be i32 or i64 (https://doc.rust-lang.org/std/os/raw/type.c_long.html)
     // This tool is linux specific and do not support 32bit systems, so we can assume that it's always i64
-    let attrs_ptr = &mut attrs as *mut i64;
+    let attrs_ptr = &raw mut attrs;
 
     unsafe {
         ioctl_fs_get_attrs(fd, attrs_ptr).context("ioctl failed")?;
@@ -82,7 +82,7 @@ pub fn set_all_attrs(path: impl AsRef<Path>, attrs: i64) -> Result<()> {
     let mut tmp = attrs;
     // SAFETY c_long is guaranteed to be i32 or i64 (https://doc.rust-lang.org/std/os/raw/type.c_long.html)
     // This tool is linux specific and do not support 32bit systems, so we can assume that it's always i64
-    let attrs_ptr = &mut tmp as *mut i64;
+    let attrs_ptr = &raw mut tmp;
     unsafe {
         ioctl_fs_set_attrs(fd, attrs_ptr).context("ioctl failed")?;
     }
@@ -91,7 +91,7 @@ pub fn set_all_attrs(path: impl AsRef<Path>, attrs: i64) -> Result<()> {
 
 /// sets list of extended fs attributes for the given path, preserving others
 /// if the attributes are set already produces no effect
-/// Ex: set_attrs!("/my/file", FS_IMMUTABLE_FL, FS_NODUMP_FL)
+/// Ex: `set_attrs!("/my/file`", `FS_IMMUTABLE_FL`, `FS_NODUMP_FL`)
 macro_rules! set_attrs {
     ($path:expr, $( $attrs:expr ),*) => {{
         match get_all_attrs($path) {
@@ -109,7 +109,7 @@ macro_rules! set_attrs {
 
 /// clears list of extended fs attributes for the given path, preserving others
 /// if the attributes are cleared already produces no effect
-/// Ex: clear_attrs!("/my/file", FS_IMMUTABLE_FL, FS_NODUMP_FL)
+/// Ex: `clear_attrs!("/my/file`", `FS_IMMUTABLE_FL`, `FS_NODUMP_FL`)
 macro_rules! clear_attrs {
     ($path:expr, $( $attrs:expr ),*) => {{
         match get_all_attrs($path) {
@@ -144,8 +144,8 @@ impl EfivarsImmutabilityGuard {
                 .context("failed to clear immutability attribute")?;
         }
         Ok(Self {
-            attrs_before_writing,
             path,
+            attrs_before_writing,
         })
     }
 }

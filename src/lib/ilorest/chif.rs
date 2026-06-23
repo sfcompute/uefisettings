@@ -304,8 +304,8 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
         unsafe {
             let tmp_struct_pointer = (self.rest_immediate)(
                 request_body_and_header_size,
-                response_key.as_ptr() as *const i8,
-                namespace.as_ptr() as *const i8,
+                response_key.as_ptr(),
+                namespace.as_ptr(),
             );
             slice::from_raw_parts(
                 tmp_struct_pointer,
@@ -323,9 +323,9 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
         // SAFETY: Look at the safety comment in rest_immediate()
         unsafe {
             let tmp_struct_pointer = (self.rest_immediate_blob_desc)(
-                request_key.as_ptr() as *const i8,
-                response_key.as_ptr() as *const i8,
-                namespace.as_ptr() as *const i8,
+                request_key.as_ptr(),
+                response_key.as_ptr(),
+                namespace.as_ptr(),
             );
             slice::from_raw_parts(
                 tmp_struct_pointer,
@@ -346,8 +346,8 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
         // SAFETY: Look at the safety comment in rest_immediate()
         unsafe {
             let tmp_struct_pointer = (self.create_not_blobentry)(
-                request_key.as_ptr() as *const i8,
-                namespace.as_ptr() as *const i8,
+                request_key.as_ptr(),
+                namespace.as_ptr(),
             );
             slice::from_raw_parts(
                 tmp_struct_pointer,
@@ -368,8 +368,8 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
             let tmp_struct_pointer = (self.write_fragment)(
                 write_block_size,
                 count,
-                request_key.as_ptr() as *const i8,
-                namespace.as_ptr() as *const i8,
+                request_key.as_ptr(),
+                namespace.as_ptr(),
             );
             slice::from_raw_parts(tmp_struct_pointer, (self.get_write_request_size)() as usize)
         }
@@ -387,8 +387,8 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
             let tmp_struct_pointer = (self.read_fragment)(
                 read_block_size,
                 count,
-                response_key.as_ptr() as *const i8,
-                namespace.as_ptr() as *const i8,
+                response_key.as_ptr(),
+                namespace.as_ptr(),
             );
             slice::from_raw_parts(tmp_struct_pointer, (self.get_read_request_size)() as usize)
         }
@@ -398,8 +398,8 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
         // SAFETY: Look at the safety comment in rest_immediate()
         unsafe {
             let tmp_struct_pointer = (self.finalize_blob)(
-                request_key.as_ptr() as *const i8,
-                namespace.as_ptr() as *const i8,
+                request_key.as_ptr(),
+                namespace.as_ptr(),
             );
             slice::from_raw_parts(
                 tmp_struct_pointer,
@@ -420,8 +420,8 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
         // SAFETY: Look at the safety comment in rest_immediate()
         unsafe {
             let tmp_struct_pointer = (self.get_key_info)(
-                response_key.as_ptr() as *const i8,
-                namespace.as_ptr() as *const i8,
+                response_key.as_ptr(),
+                namespace.as_ptr(),
             );
             slice::from_raw_parts(tmp_struct_pointer, (self.get_info_request_size)() as usize)
         }
@@ -439,7 +439,7 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
         // SAFETY: Look at the safety comment in rest_immediate()
         unsafe {
             let tmp_struct_pointer =
-                (self.delete_blob)(key.as_ptr() as *const i8, namespace.as_ptr() as *const i8);
+                (self.delete_blob)(key.as_ptr(), namespace.as_ptr());
             slice::from_raw_parts(
                 tmp_struct_pointer,
                 (self.get_delete_request_size)() as usize,
@@ -453,6 +453,7 @@ impl<'a> IloRestChifInterface for IloRestChif<'a> {
 }
 
 /// IloRestChifInterface is a rusty interface to ilorest_chif functions
+#[allow(dead_code)]
 pub trait IloRestChifInterface {
     fn ping(&self) -> Result<(), u32>;
     fn exchange_packet(&self, send_buf: &[u8]) -> Result<Vec<u8>, u32>;

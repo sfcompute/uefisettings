@@ -399,6 +399,7 @@ pub struct RedfishSettings {
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase", default)]
+#[allow(dead_code)]
 pub struct RedfishSettingsInfo {
     #[serde(rename = "@odata.type")]
     pub odata_type: String,

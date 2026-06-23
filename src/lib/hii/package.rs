@@ -195,7 +195,7 @@ pub struct ParsedHiiDB {
 /// * string -> parse and save data
 /// * form -> parse and save data
 /// * something else (like fonts or animations) -> we don't care about them, so continue to the next package in the package list.
-/// In the end return a ParsedHiiDB struct which will have the parsed and saved data.
+///   In the end return a ParsedHiiDB struct which will have the parsed and saved data.
 pub fn read_db(source: &[u8]) -> Result<ParsedHiiDB> {
     let mut res = ParsedHiiDB {
         strings: HashMap::new(),

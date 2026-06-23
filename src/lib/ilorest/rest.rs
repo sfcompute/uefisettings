@@ -44,6 +44,7 @@ impl RestClient {
     }
 
     // post request to the endpoint with given JSON body. Returns HTTP status code and response body bytes.
+    #[allow(dead_code)]
     pub fn post(&self, endpoint: &str, body: &str) -> Result<(u16, Vec<u8>)> {
         let mut headers = self.default_headers();
         headers.insert(
@@ -66,6 +67,7 @@ impl RestClient {
     }
 
     // put request to the endpoint with given JSON body. Returns HTTP status code and response body bytes.
+    #[allow(dead_code)]
     pub fn put(&self, endpoint: &str, body: &str) -> Result<(u16, Vec<u8>)> {
         let mut headers = self.default_headers();
         headers.insert(
@@ -190,7 +192,7 @@ impl RestClient {
         let mut request_contents = format!("{} {} HTTP/1.1\r\n", method, endpoint);
         headers.insert(
             "Content-Length".to_string(),
-            body.as_bytes().len().to_string(),
+            body.len().to_string(),
         );
 
         for (header_key, header_value) in headers {

@@ -262,7 +262,7 @@ pub struct IFROperation {
     #[br(map = |x: u8| x & 0x80 != 0)]
     // read 8 bits, discard all of them except the last one
     pub open_scope: bool,
-    #[br(count = length - 2)] // first 3 fields make up 16 bits = 2 bytes
+    #[br(count = usize::from(length) - 2)] // first 3 fields make up 16 bits = 2 bytes
     data: Vec<u8>,
 
     // the following fields will not be parsed by binrw and when an instance of this struct is created
@@ -289,6 +289,8 @@ impl fmt::Debug for IFROperation {
 }
 
 #[derive(Debug)]
+#[derive(Default)]
+#[allow(dead_code)]
 pub enum ParsedOperation {
     FormSet(FormSet),
     OneOf(OneOf),
@@ -305,12 +307,8 @@ pub enum ParsedOperation {
     QuestionRef1(QuestionRef1),
     EqIdVal(EqIdVal),
     EqIdValList(EqIdValList),
+    #[default]
     Placeholder,
-}
-impl Default for ParsedOperation {
-    fn default() -> Self {
-        ParsedOperation::Placeholder
-    }
 }
 
 // Documentation for subsequent structs at:
@@ -489,7 +487,7 @@ trait VariableStore {
     /// extract raw bytes from UEFI using the /sys virtual filesystem
     fn read_bytes(&self) -> Result<Vec<u8>> {
         // try to read data from varstore
-        let mut file = File::open(&self.store_filename()).context(format!(
+        let mut file = File::open(self.store_filename()).context(format!(
             "failed to open sysfs efivars '{}' to get varstore bytes",
             self.store_filename()
         ))?;
@@ -673,7 +671,7 @@ pub struct EqIdVal {
 pub struct EqIdValList {
     pub question_id: u16,
     pub list_length: u16,
-    #[br(count = list_length)]
+    #[br(count = usize::from(list_length))]
     pub value_list: Vec<u16>,
 }
 
@@ -703,6 +701,7 @@ pub struct Ref {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
+#[allow(dead_code)]
 /// Any structs having TypeValue as a field can have value of one of these types
 /// depending on the value of the value_type
 pub enum TypeValue {
@@ -792,12 +791,9 @@ pub fn handle_form_package(
             let current_scope_clone = Rc::clone(&current_scope);
             match current_scope_clone.borrow().parent.as_ref() {
                 Some(parent_ref) => {
-                    match parent_ref.upgrade() {
-                        Some(parent_ref_rc) => {
-                            // current_scope = current_scope 's parent
-                            current_scope = Rc::clone(&parent_ref_rc);
-                        }
-                        None => {}
+                    if let Some(parent_ref_rc) = parent_ref.upgrade() {
+                        // current_scope = current_scope 's parent
+                        current_scope = Rc::clone(&parent_ref_rc);
                     }
 
                     debug!(
@@ -1280,11 +1276,8 @@ fn handle_oneof(
     if chosen_value == u64::MAX {
         // No answer was provided, so using the default value instead.
         for child in &node.borrow().children {
-            match &child.borrow().parsed_data {
-                ParsedOperation::IFRDefault(o) => {
-                    chosen_value = u64::from(o.default_id);
-                }
-                _ => {}
+            if let ParsedOperation::IFRDefault(o) = &child.borrow().parsed_data {
+                chosen_value = u64::from(o.default_id);
             }
         }
     }
@@ -1294,31 +1287,28 @@ fn handle_oneof(
 
     let mut found_option = false;
     for child in &node.borrow().children {
-        match &child.borrow().parsed_data {
-            ParsedOperation::OneOfOption(o) => {
-                let current_value: u64 = match o.value {
-                    TypeValue::NumSize8(c) => c as u64,
-                    TypeValue::NumSize16(c) => c as u64,
-                    TypeValue::NumSize32(c) => c as u64,
-                    TypeValue::NumSize64(c) => c as u64,
-                    _ => 0,
-                };
+        if let ParsedOperation::OneOfOption(o) = &child.borrow().parsed_data {
+            let current_value: u64 = match o.value {
+                TypeValue::NumSize8(c) => c as u64,
+                TypeValue::NumSize16(c) => c as u64,
+                TypeValue::NumSize32(c) => c as u64,
+                TypeValue::NumSize64(c) => c,
+                _ => 0,
+            };
 
-                let opt = AnswerOption {
-                    raw_value: o.value.clone(),
-                    value: find_corresponding_string(o.option_string_id, string_packages)
-                        .to_string(),
-                };
+            let opt = AnswerOption {
+                raw_value: o.value,
+                value: find_corresponding_string(o.option_string_id, string_packages)
+                    .to_string(),
+            };
 
-                if !varstore_not_found && current_value == chosen_value && !found_option {
-                    found_option = true;
-                    answer.push_str(opt.value.trim());
-                    // cannot break here because we want to add all options to possible_options
-                }
-
-                possible_options.push(opt);
+            if !varstore_not_found && current_value == chosen_value && !found_option {
+                found_option = true;
+                answer.push_str(opt.value.trim());
+                // cannot break here because we want to add all options to possible_options
             }
-            _ => {}
+
+            possible_options.push(opt);
         }
     }
 	if answer.is_empty() {
@@ -1464,7 +1454,7 @@ pub fn display(
             format!(
                 "{extra_spaces}OpCode: {:?} - Name: {}\n",
                 current_node.op_code,
-                parsed.name.to_string(),
+                parsed.name,
             )
             .as_str(),
         ),
@@ -1715,10 +1705,10 @@ pub fn change_value(
     Ok(changed)
 }
 
-fn find_corresponding_string<'a>(
+fn find_corresponding_string(
     string_id: u16,
-    string_packages: &'a Vec<HashMap<i32, String>>,
-) -> &'a str {
+    string_packages: &Vec<HashMap<i32, String>>,
+) -> &str {
     // TODO: accept language pack parameter later
     // it defaults to the first language pack it can find and the first one is en-US
 
@@ -1751,16 +1741,14 @@ fn find_corresponding_varstore(
 
         for child in &current_node.children {
             match &child.borrow().parsed_data {
-                ParsedOperation::VarStore(v) => {
-                    if v.var_store_id == var_store_id {
+                ParsedOperation::VarStore(v)
+                    if v.var_store_id == var_store_id => {
                         return Ok(Box::new(v.clone()));
                     }
-                }
-                ParsedOperation::VarStoreEfi(v) => {
-                    if v.var_store_id == var_store_id {
+                ParsedOperation::VarStoreEfi(v)
+                    if v.var_store_id == var_store_id => {
                         return Ok(Box::new(v.clone()));
                     }
-                }
                 _ => {}
             }
         }

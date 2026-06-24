@@ -1015,7 +1015,7 @@ pub struct AnswerOption {
 #[allow(clippy::needless_pass_by_value)]
 pub fn list_questions(
     node: Rc<RefCell<IFROperation>>,
-    string_packages: &Vec<StringMap>,
+    string_packages: &[StringMap],
 ) -> Vec<QuestionDescriptor> {
     let mut res = Vec::new();
 
@@ -1028,10 +1028,8 @@ pub fn list_questions(
                 string_packages,
             );
 
-            let varstore = find_corresponding_varstore(
-                &node,
-                parsed.question_header().var_store_id,
-            );
+            let varstore =
+                find_corresponding_varstore(&node, parsed.question_header().var_store_id);
 
             let question_descriptor =
                 handle_numeric(varstore, parsed, question, string_packages, &current_node);
@@ -1043,10 +1041,8 @@ pub fn list_questions(
                 string_packages,
             );
 
-            let varstore = find_corresponding_varstore(
-                &node,
-                parsed.question_header().var_store_id,
-            );
+            let varstore =
+                find_corresponding_varstore(&node, parsed.question_header().var_store_id);
 
             let question_descriptor = handle_oneof(
                 varstore,
@@ -1064,10 +1060,8 @@ pub fn list_questions(
                 string_packages,
             );
 
-            let varstore = find_corresponding_varstore(
-                &node,
-                parsed.question_header().var_store_id,
-            );
+            let varstore =
+                find_corresponding_varstore(&node, parsed.question_header().var_store_id);
 
             let question_descriptor =
                 handle_checkbox(varstore, parsed, question, string_packages, &current_node);
@@ -1091,94 +1085,80 @@ pub fn list_questions(
 #[allow(clippy::needless_pass_by_value)]
 pub fn find_question<T>(
     node: Rc<RefCell<IFROperation>>,
-    string_packages: &Vec<StringMap>,
+    string_packages: &[StringMap],
     possible_question_phrases: &HashSet<T>,
 ) -> Option<QuestionDescriptor>
 where
     T: AsRef<str>,
 {
-    let current_node = node.borrow();
+    let phrases: HashSet<&str> = possible_question_phrases
+        .iter()
+        .map(AsRef::as_ref)
+        .collect();
+    find_question_inner(&node, string_packages, &phrases)
+}
 
-    // Only Numeric, OneOf and CheckBox are questions.
-    // If our question is found this match expression will return without caring if we found answer.
-    // Otherwise, we will look at children of current_node
+fn find_question_inner(
+    node: &Rc<RefCell<IFROperation>>,
+    string_packages: &[StringMap],
+    possible_question_phrases: &HashSet<&str>,
+) -> Option<QuestionDescriptor> {
+    {
+        let current_node = node.borrow();
+        let question_ids = match &current_node.parsed_data {
+            ParsedOperation::Numeric(parsed) => Some((
+                parsed.question_header().prompt_string_id,
+                parsed.question_header().var_store_id,
+            )),
+            ParsedOperation::OneOf(parsed) => Some((
+                parsed.question_header().prompt_string_id,
+                parsed.question_header().var_store_id,
+            )),
+            ParsedOperation::CheckBox(parsed) => Some((
+                parsed.question_header().prompt_string_id,
+                parsed.question_header().var_store_id,
+            )),
+            _ => None,
+        };
 
-    for phrase in possible_question_phrases {
-        match &current_node.parsed_data {
-            ParsedOperation::Numeric(parsed) => {
-                let question = find_corresponding_string(
-                    parsed.question_header().prompt_string_id,
-                    string_packages,
-                );
+        if let Some((prompt_string_id, var_store_id)) = question_ids {
+            let questions = find_corresponding_strings(prompt_string_id, string_packages);
 
-                if phrase.as_ref().eq_ignore_ascii_case(question.trim()) {
-                    let varstore = find_corresponding_varstore(
-                        &node,
-                        parsed.question_header().var_store_id,
-                    );
+            if questions.iter().any(|q| {
+                possible_question_phrases
+                    .iter()
+                    .any(|p| q.eq_ignore_ascii_case(p.trim()))
+            }) {
+                let varstore = find_corresponding_varstore(node, var_store_id);
+                let question = questions[0];
 
-                    let res =
-                        handle_numeric(varstore, parsed, question, string_packages, &current_node);
-
-                    return Some(res);
-                }
-            }
-            ParsedOperation::OneOf(parsed) => {
-                let question = find_corresponding_string(
-                    parsed.question_header().prompt_string_id,
-                    string_packages,
-                );
-
-                if phrase.as_ref().eq_ignore_ascii_case(question.trim()) {
-                    let varstore = find_corresponding_varstore(
-                        &node,
-                        parsed.question_header().var_store_id,
-                    );
-
-                    let res = handle_oneof(
+                let res = match &current_node.parsed_data {
+                    ParsedOperation::Numeric(parsed) => {
+                        handle_numeric(varstore, parsed, question, string_packages, &current_node)
+                    }
+                    ParsedOperation::OneOf(parsed) => handle_oneof(
                         varstore,
                         parsed,
-                        &node,
+                        node,
                         string_packages,
                         question,
                         &current_node,
-                    );
-
-                    return Some(res);
-                }
+                    ),
+                    ParsedOperation::CheckBox(parsed) => {
+                        handle_checkbox(varstore, parsed, question, string_packages, &current_node)
+                    }
+                    _ => unreachable!(),
+                };
+                return Some(res);
             }
-            ParsedOperation::CheckBox(parsed) => {
-                let question = find_corresponding_string(
-                    parsed.question_header().prompt_string_id,
-                    string_packages,
-                );
-
-                if phrase.as_ref().eq_ignore_ascii_case(question.trim()) {
-                    let varstore = find_corresponding_varstore(
-                        &node,
-                        parsed.question_header().var_store_id,
-                    );
-
-                    let res =
-                        handle_checkbox(varstore, parsed, question, string_packages, &current_node);
-
-                    return Some(res);
-                }
-            }
-
-            _ => {}
         }
     }
 
-    // Question not found in current_node so look at children
     for child in &node.borrow().children {
-        if let Some(res) =
-            find_question(Rc::clone(child), string_packages, possible_question_phrases)
-        {
+        if let Some(res) = find_question_inner(child, string_packages, possible_question_phrases) {
             return Some(res);
         }
     }
-
     None
 }
 
@@ -1186,7 +1166,7 @@ fn handle_checkbox(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &CheckBox,
     question: &str,
-    string_packages: &Vec<StringMap>,
+    string_packages: &[StringMap],
     current_node: &std::cell::Ref<IFROperation>,
 ) -> QuestionDescriptor {
     let mut answer = String::new();
@@ -1227,7 +1207,7 @@ fn handle_oneof(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &OneOf,
     node: &Rc<RefCell<IFROperation>>,
-    string_packages: &Vec<StringMap>,
+    string_packages: &[StringMap],
     question: &str,
     current_node: &std::cell::Ref<IFROperation>,
 ) -> QuestionDescriptor {
@@ -1341,7 +1321,7 @@ fn handle_numeric(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &Numeric,
     question: &str,
-    string_packages: &Vec<StringMap>,
+    string_packages: &[StringMap],
     current_node: &std::cell::Ref<IFROperation>,
 ) -> QuestionDescriptor {
     let mut answer = String::new();
@@ -1729,24 +1709,30 @@ pub fn change_value(
     Ok(changed)
 }
 
-fn find_corresponding_string(string_id: u16, string_packages: &Vec<super::package::StringMap>) -> &str {
+fn find_corresponding_string(string_id: u16, string_packages: &[StringMap]) -> &str {
+    find_corresponding_strings(string_id, string_packages)[0]
+}
+
+fn find_corresponding_strings(string_id: u16, string_packages: &[StringMap]) -> Vec<&str> {
     // TODO: accept language pack parameter later
     // it defaults to the first language pack it can find and the first one is en-US
 
-    for (_, package) in string_packages {
-        if let Some(s) = package.get(&i32::from(string_id)) {
-            return s;
-        }
+    let strings: Vec<&str> = string_packages
+        .iter()
+        .filter_map(|(_lang, sp)| sp.get(&i32::from(string_id)).map(String::as_str))
+        .collect();
+
+    if strings.is_empty() {
+        // in lots of language packs most strings are simply not present
+        // in some cases strings aren't there at all in any language
+
+        // cannot return an error here because its the firmware not following the spec
+        debug!("string id: {string_id} not found");
+
+        return vec![""];
     }
 
-    // in lots of language packs most strings are simply not present
-    // in some cases strings aren't there at all in any language
-
-    // cannot return an error here because its the firmware not following the spec
-
-    debug!("string id: {string_id} not found");
-
-    ""
+    strings
 }
 
 /// `find_corresponding_varstore` bubble's up from current node till we find a `FormSet`.
@@ -1776,9 +1762,7 @@ fn find_corresponding_varstore(
 
     match current_node.parent.as_ref() {
         Some(parent_ref) => match parent_ref.upgrade() {
-            Some(parent_ref_rc) => {
-                find_corresponding_varstore(&parent_ref_rc, var_store_id)
-            }
+            Some(parent_ref_rc) => find_corresponding_varstore(&parent_ref_rc, var_store_id),
             None => Err(anyhow!("could not upgrade parent_ref Weak<> to get Rc<>")),
         },
         None => Err(anyhow!("varstore not found because we reached root")),

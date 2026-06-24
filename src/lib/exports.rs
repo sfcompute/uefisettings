@@ -171,6 +171,73 @@ impl HiiBackend {
         }
         Ok(res)
     }
+
+    /// # Errors
+    /// Returns an error if the HiiDB cannot be read or parsed.
+    pub fn get_many(questions: &[&str]) -> Result<Vec<GetResponseList>> {
+        let db_bytes = extract::extract_db()?;
+        let parsed_db = package::read_db(&db_bytes)?;
+
+        questions.iter().map(|&q| get_one(q, &parsed_db)).collect()
+    }
+}
+
+fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetResponseList> {
+    let hii_translation = get_qa_variations_hii(question, "");
+    let (question_variations, is_translated) = match hii_translation {
+        HiiTranslation::Translated {
+            question_variations,
+            ..
+        } => (question_variations, true),
+        HiiTranslation::NotTranslated {
+            question_variations,
+            ..
+        } => (question_variations, false),
+    };
+
+    let mut resp = Vec::new();
+
+    for (guid, package_list) in &parsed_db.forms {
+        for form_package in package_list {
+            if let Some(question_descriptor) = forms::find_question(
+                form_package.clone(),
+                parsed_db
+                    .strings
+                    .get(guid)
+                    .context(format!("Failed to get string packages using GUID {guid}"))?,
+                &question_variations,
+            ) {
+                let mut get_resp = GetResponse {
+                    selector: guid.clone(),
+                    backend: Backend::Hii,
+                    is_translated,
+                    question: Question {
+                        name: question_descriptor.question,
+                        answer: question_descriptor.value,
+                        help: question_descriptor.help,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                };
+
+                if is_translated {
+                    get_resp.question.answer =
+                        translate_response(question, &get_resp.question.answer, Backend::Hii);
+                }
+
+                for opt in question_descriptor.possible_options {
+                    get_resp.question.options.push(opt.value);
+                }
+
+                resp.push(get_resp);
+            }
+        }
+    }
+
+    Ok(GetResponseList {
+        responses: resp,
+        ..Default::default()
+    })
 }
 
 impl SettingsBackend for HiiBackend {
@@ -270,66 +337,9 @@ impl SettingsBackend for HiiBackend {
 
     fn get(question: &str, _selector: Option<&str>) -> Result<GetResponseList> {
         // TODO: use selector to only get questions which match question + selector
-
-        let mut resp = Vec::new();
-
-        let hii_translation = get_qa_variations_hii(question, "");
-        let (question_variations, is_translated) = match hii_translation {
-            HiiTranslation::Translated {
-                question_variations,
-                ..
-            } => (question_variations, true),
-            HiiTranslation::NotTranslated {
-                question_variations,
-                ..
-            } => (question_variations, false),
-        };
-
         let db_bytes = extract::extract_db()?;
         let parsed_db = package::read_db(&db_bytes)?;
-
-        for (guid, package_list) in parsed_db.forms {
-            for form_package in package_list {
-                if let Some(question_descriptor) = forms::find_question(
-                    form_package,
-                    parsed_db
-                        .strings
-                        .get(&guid)
-                        .context(format!("Failed to get string packages using GUID {guid}"))?,
-                    &question_variations,
-                ) {
-                    let mut get_resp = GetResponse {
-                        selector: guid.clone(),
-                        backend: Backend::Hii,
-                        is_translated,
-                        // mapping the hii module's QuestionDescriptor to thrift codegen's Question
-                        question: Question {
-                            name: question_descriptor.question,
-                            answer: question_descriptor.value,
-                            help: question_descriptor.help,
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    };
-
-                    if is_translated {
-                        get_resp.question.answer =
-                            translate_response(question, &get_resp.question.answer, Backend::Hii);
-                    }
-
-                    for opt in question_descriptor.possible_options {
-                        get_resp.question.options.push(opt.value);
-                    }
-
-                    resp.push(get_resp);
-                }
-            }
-        }
-
-        Ok(GetResponseList {
-            responses: resp,
-            ..Default::default()
-        })
+        get_one(question, &parsed_db)
     }
 }
 
@@ -393,8 +403,8 @@ impl IloBackend {
         let ilo_bios_settings = IloAttributes {
             selector: ilo_device.bios_settings_selector(),
             attributes: compare_redfish_attributes(
-                ilo_device.get_current_bios_settings()?,
-                ilo_device.get_pending_bios_settings()?,
+                &ilo_device.get_current_bios_settings()?,
+                &ilo_device.get_pending_bios_settings()?,
             ),
             ..Default::default()
         };
@@ -405,8 +415,8 @@ impl IloBackend {
             let ilo_debug_settings = IloAttributes {
                 selector: Ilo5Dev::debug_settings_selector(),
                 attributes: compare_redfish_attributes(
-                    Ilo5Dev::get_current_debug_settings(machine_type)?,
-                    Ilo5Dev::get_pending_debug_settings(machine_type)?,
+                    &Ilo5Dev::get_current_debug_settings(machine_type)?,
+                    &Ilo5Dev::get_pending_debug_settings(machine_type)?,
                 ),
                 ..Default::default()
             };
@@ -416,8 +426,8 @@ impl IloBackend {
             let ilo_service_settings = IloAttributes {
                 selector: Ilo5Dev::service_settings_selector(),
                 attributes: compare_redfish_attributes(
-                    Ilo5Dev::get_current_service_settings(machine_type)?,
-                    Ilo5Dev::get_pending_service_settings(machine_type)?,
+                    &Ilo5Dev::get_current_service_settings(machine_type)?,
+                    &Ilo5Dev::get_pending_service_settings(machine_type)?,
                 ),
                 ..Default::default()
             };
@@ -646,11 +656,11 @@ fn btreemap_from_redfish_attributes(attributes: RedfishAttributes) -> BTreeMap<S
 }
 
 fn compare_redfish_attributes(
-    old_attributes: RedfishAttributes,
-    new_attributes: RedfishAttributes,
+    old_attributes: &RedfishAttributes,
+    new_attributes: &RedfishAttributes,
 ) -> BTreeMap<String, String> {
     let mut map = BTreeMap::new();
-    for (key, value) in &new_attributes {
+    for (key, value) in new_attributes {
         if let Value::String(new_value) = value {
             if let Some(Value::String(old_value)) = old_attributes.get(key) {
                 if !old_value.eq(new_value) {

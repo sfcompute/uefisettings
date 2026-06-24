@@ -93,7 +93,8 @@ pub fn handle_string_package(
 
     // Now parse the blocks
     // I think we need to use the string_header.string_info_offset to get the proper starting poing
-    package_cursor.set_position(starting_position - 4 + string_header.string_info_offset as u64);
+    package_cursor
+        .set_position(starting_position - 4 + u64::from(string_header.string_info_offset));
 
     let mut string_id_current: i32 = 1;
 

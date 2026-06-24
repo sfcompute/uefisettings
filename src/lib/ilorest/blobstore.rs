@@ -76,9 +76,11 @@ impl<'a> Transport<'a> {
 
             debug!("Sending request using a direct/single-packet write");
 
-            let header_template =
-                self.ilo
-                    .prepare_immediate_request(u32::try_from(request.len())?, &response_key, &namespace);
+            let header_template = self.ilo.prepare_immediate_request(
+                u32::try_from(request.len())?,
+                &response_key,
+                &namespace,
+            );
 
             let mut packet_to_send = Vec::from(header_template);
             packet_to_send.append(&mut request.to_owned());

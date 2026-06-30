@@ -174,11 +174,11 @@ impl HiiBackend {
 
     /// # Errors
     /// Returns an error if the HiiDB cannot be read or parsed.
-    pub fn get_many(questions: &[&str]) -> Result<Vec<GetResponseList>> {
+    pub fn get_many<'a>(questions: impl Iterator<Item = &'a str>) -> Result<Vec<GetResponseList>> {
         let db_bytes = extract::extract_db()?;
         let parsed_db = package::read_db(&db_bytes)?;
 
-        questions.iter().map(|&q| get_one(q, &parsed_db)).collect()
+        questions.map(|q| get_one(q, &parsed_db)).collect()
     }
 }
 

@@ -13,8 +13,9 @@
 use std::collections::HashSet;
 
 use log::info;
-use uefisettings_backend_thrift::Backend;
-use uefisettings_spellings_db_thrift::consts::translation_db;
+
+use crate::spellings::translation_db;
+use crate::types::Backend;
 
 pub enum HiiTranslation {
     Translated {
@@ -84,22 +85,19 @@ pub fn translate_response(question: &str, answer: &str, backend: Backend) -> Str
     }
     let question_mapping = question_mapping.unwrap();
 
-    match backend {
-        Backend::Hii => {
-            if let Some(hii_question_mapping) = &question_mapping.hii_question {
-                if let Some(answer_replacements) = &(hii_question_mapping.answer_replacements) {
-                    for (key, value) in answer_replacements {
-                        for replacement in value {
-                            if replacement.eq_ignore_ascii_case(answer) {
-                                info!("reverse translating {} to {}", replacement, key);
-                                return key.to_owned();
-                            }
+    if backend == Backend::Hii {
+        if let Some(hii_question_mapping) = &question_mapping.hii_question {
+            if let Some(answer_replacements) = &(hii_question_mapping.answer_replacements) {
+                for (key, value) in answer_replacements {
+                    for replacement in value {
+                        if replacement.eq_ignore_ascii_case(answer) {
+                            info!("reverse translating {} to {}", replacement, key);
+                            return key.to_owned();
                         }
                     }
                 }
             }
         }
-        _ => {}
     }
     answer.to_owned()
 }

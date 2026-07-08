@@ -11,8 +11,6 @@ name = "uefisettings"
 path = "src/lib.rs"
 
 [dependencies]
-uefisettings_backend_thrift = { path = "../../thrift/rust/uefisettings_backend_thrift", version = "0.1" }
-uefisettings_spellings_db_thrift = { path = "../../thrift/rust/uefisettings_spellings_db_thrift", version = "0.1" }
 anyhow = "1"
 log = "0.4"
 nix = { version = "0.27", features = ["fs", "ioctl", "mount"] }

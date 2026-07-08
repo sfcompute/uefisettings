@@ -14,16 +14,6 @@ use std::fmt::Write;
 
 use anyhow::Context;
 use anyhow::Result;
-use uefisettings_backend_thrift::Backend;
-use uefisettings_backend_thrift::GetResponse;
-use uefisettings_backend_thrift::GetResponseList;
-use uefisettings_backend_thrift::HiiDatabase;
-use uefisettings_backend_thrift::HiiShowIfrResponse;
-use uefisettings_backend_thrift::HiiStringsPackage;
-use uefisettings_backend_thrift::Question;
-use uefisettings_backend_thrift::SetResponse;
-use uefisettings_backend_thrift::SetResponseList;
-
 use crate::hii::extract;
 use crate::hii::forms;
 use crate::hii::forms::list_questions;
@@ -31,6 +21,15 @@ use crate::hii::package;
 use crate::translation::get_qa_variations_hii;
 use crate::translation::translate_response;
 use crate::translation::HiiTranslation;
+use crate::types::Backend;
+use crate::types::GetResponse;
+use crate::types::GetResponseList;
+use crate::types::HiiDatabase;
+use crate::types::HiiShowIfrResponse;
+use crate::types::HiiStringsPackage;
+use crate::types::Question;
+use crate::types::SetResponse;
+use crate::types::SetResponseList;
 
 /// `SettingsBackend` is a trait which should be satisfied by all backends (currently only hii)
 pub trait SettingsBackend {
@@ -52,11 +51,10 @@ impl HiiBackend {
     /// `extract_db` extracts `HiiDB` from efivarfs and returns it in bytes (in `HiiDatabase`'s db field which is Vec<u8>)
     ///
     /// # Errors
-    /// Returns an error if the HiiDB cannot be read from efivarfs.
+    /// Returns an error if the `HiiDB` cannot be read from efivarfs.
     pub fn extract_db() -> Result<HiiDatabase> {
         let resp = HiiDatabase {
             db: extract::extract_db()?,
-            ..Default::default()
         };
         Ok(resp)
     }
@@ -64,7 +62,7 @@ impl HiiBackend {
     /// `show_ifr` returns a human readable representation of the forms in Hii
     ///
     /// # Errors
-    /// Returns an error if the HiiDB bytes cannot be parsed.
+    /// Returns an error if the `HiiDB` bytes cannot be parsed.
     pub fn show_ifr(db_bytes: &[u8]) -> Result<HiiShowIfrResponse> {
         // We depend on the caller to provide us with the hiidb instead of calling extract here
         // because they might want to provide a file instead.
@@ -89,7 +87,6 @@ impl HiiBackend {
 
         let resp = HiiShowIfrResponse {
             readable_representation,
-            ..Default::default()
         };
         Ok(resp)
     }
@@ -97,7 +94,7 @@ impl HiiBackend {
     /// list all strings-id, string pairs in `HiiDB`
     ///
     /// # Errors
-    /// Returns an error if the HiiDB bytes cannot be parsed.
+    /// Returns an error if the `HiiDB` bytes cannot be parsed.
     pub fn list_strings(db_bytes: &[u8]) -> Result<Vec<HiiStringsPackage>> {
         let mut resp = Vec::new();
         let parsed_db = package::read_db(db_bytes)?;
@@ -120,7 +117,7 @@ impl HiiBackend {
     }
 
     /// # Errors
-    /// Returns an error if the HiiDB bytes cannot be parsed.
+    /// Returns an error if the `HiiDB` bytes cannot be parsed.
     pub fn list_questions(db_bytes: &[u8]) -> Result<Vec<Question>> {
         let mut res = Vec::new();
         let parsed_db = package::read_db(db_bytes)?;
@@ -158,7 +155,7 @@ impl HiiBackend {
     }
 
     /// # Errors
-    /// Returns an error if the HiiDB cannot be read or parsed.
+    /// Returns an error if the `HiiDB` cannot be read or parsed.
     pub fn get_many<'a>(questions: impl Iterator<Item = &'a str>) -> Result<Vec<GetResponseList>> {
         let db_bytes = extract::extract_db()?;
         let parsed_db = package::read_db(&db_bytes)?;
@@ -202,7 +199,6 @@ fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetRespon
                         help: question_descriptor.help,
                         ..Default::default()
                     },
-                    ..Default::default()
                 };
 
                 if is_translated {
@@ -221,7 +217,6 @@ fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetRespon
 
     Ok(GetResponseList {
         responses: resp,
-        ..Default::default()
     })
 }
 
@@ -300,7 +295,6 @@ impl SettingsBackend for HiiBackend {
                                 ..Default::default()
                             },
                             modified: true,
-                            ..Default::default()
                         };
 
                         for opt in question_descriptor.possible_options {
@@ -316,7 +310,6 @@ impl SettingsBackend for HiiBackend {
 
         Ok(SetResponseList {
             responses: resp,
-            ..Default::default()
         })
     }
 

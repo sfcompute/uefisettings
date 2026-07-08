@@ -51,8 +51,6 @@ SUBCOMMANDS:
     get         Auto-identify backend and get the current value of a question
     help        Print this message or the help of the given subcommand(s)
     hii         Commands which work on machines exposing the UEFI HiiDB
-    identify    Auto-identify backend and display hardware/bios-information
-    ilo         Commands which work on machines having HPE's Ilo BMC
     set         Auto-identify backend and set/change the value of a question
 ```
 
@@ -66,16 +64,6 @@ SUBCOMMANDS:
     list-strings    List all strings-id, string pairs in HiiDB
     set             Set/change the value of a question
     show-ifr        Show a human readable representation of the Hii Forms
-```
-
-`ilo`:
-
-```plain
-SUBCOMMANDS:
-    get                Get the current value of a question
-    help               Print this message or the help of the given subcommand(s)
-    set                Set/change the value of a question
-    show-attributes    List bios attributes and their current values
 ```
 
 ---

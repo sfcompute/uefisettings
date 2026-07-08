@@ -14,4 +14,6 @@ mod chattr;
 pub mod exports;
 mod file_lock;
 mod hii;
+mod spellings;
 mod translation;
+pub mod types;

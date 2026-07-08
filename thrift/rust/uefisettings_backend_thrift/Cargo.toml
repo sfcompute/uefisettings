@@ -7,8 +7,6 @@ license = "BSD-3-Clause"
 homepage = "https://github.com/linuxboot/uefisettings"
 
 [dependencies]
-anyhow = "1.0"
-fbthrift = "0.0"
 
 [lib]
 name = "uefisettings_backend_thrift"

@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "crates/uefisettings",
+    "crates/uefisettings-cli",
 ]
 
 [workspace.package]

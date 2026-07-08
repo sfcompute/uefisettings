@@ -1,0 +1,22 @@
+[package]
+name = "uefisettings-cli"
+description = "Command line interface for the uefisettings tool to read/get/extract and write/change/modify BIOS/UEFI settings from Linux terminal."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+homepage.workspace = true
+
+[[bin]]
+name = "uefisettings"
+path = "src/main.rs"
+
+[dependencies]
+uefisettings = { path = "../uefisettings", version = "0.1.5" }
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+log = "0.4"
+env_logger = "0.11"
+serde_json = "1"
+
+[lints]
+workspace = true

@@ -15,16 +15,13 @@ uefisettings_backend_thrift = { path = "../../thrift/rust/uefisettings_backend_t
 uefisettings_spellings_db_thrift = { path = "../../thrift/rust/uefisettings_spellings_db_thrift", version = "0.1" }
 anyhow = "1"
 log = "0.4"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1"
 nix = { version = "0.27", features = ["fs", "ioctl", "mount"] }
-tempfile = "3"
-libloading = "0.8"
-httparse = "1"
 binrw = "0.13"
-rand = "0.8"
 proc-mounts = "0.3"
 thiserror = "1"
+
+[dev-dependencies]
+tempfile = "3"
 
 [lints]
 workspace = true

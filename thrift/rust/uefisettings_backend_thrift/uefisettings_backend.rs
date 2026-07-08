@@ -158,7 +158,6 @@ pub mod types {
     impl Backend {
         pub const Unknown: Self = Backend(0i32);
         pub const Hii: Self = Backend(1i32);
-        pub const Ilo: Self = Backend(2i32);
     }
 
     impl ::fbthrift::ThriftEnum for Backend {
@@ -166,7 +165,6 @@ pub mod types {
             &[
                 (Backend::Unknown, "Unknown"),
                 (Backend::Hii, "Hii"),
-                (Backend::Ilo, "Ilo"),
             ]
         }
 
@@ -174,7 +172,6 @@ pub mod types {
             &[
                 "Unknown",
                 "Hii",
-                "Ilo",
             ]
         }
 
@@ -182,7 +179,6 @@ pub mod types {
             &[
                 Backend::Unknown,
                 Backend::Hii,
-                Backend::Ilo,
             ]
         }
     }

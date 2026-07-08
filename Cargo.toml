@@ -2,7 +2,6 @@
 resolver = "2"
 members = [
     "crates/uefisettings",
-    "crates/uefisettings-cli",
     "thrift/rust/uefisettings_backend_thrift",
     "thrift/rust/uefisettings_spellings_db_thrift",
 ]

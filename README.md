@@ -5,7 +5,6 @@
 `uefisettings` is a tool to read and write BIOS settings on a local host. It currently supports two interfaces:
 
 * HiiDB (used in OCP and also has partial support in other platforms)
-* iLO BlobStore (used in HPE)
 
 ---
 

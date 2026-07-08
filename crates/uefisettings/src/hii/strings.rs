@@ -87,7 +87,7 @@ pub fn handle_string_package(
         .context("failed to parse string package header")?;
     debug!(
         "String package language is {} and language name is {:?}",
-        string_header.language.to_string(),
+        string_header.language,
         string_header.language_name
     );
 
@@ -105,28 +105,27 @@ pub fn handle_string_package(
 
         let block_type: StringBlockType = match package_cursor.read_ne() {
             Err(why) => {
-                error!("Can't read block header {}", why);
+                error!("Can't read block header {why}");
                 // We can also break because if there is an error here we loose track of string_id_current
                 // and want to immediately stop parsing this string package anything beyond this wont be useful.
                 return Err(why.into());
             }
             Ok(p) => p,
         };
-        debug!("Blocktype is {:?}", block_type);
+        debug!("Blocktype is {block_type:?}");
 
         match block_type {
             StringBlockType::StringUcs2 => {
                 let null_str: binrw::NullWideString = match package_cursor.read_ne() {
                     Err(why) => {
-                        error!("Can't read null-terminated 16-bit string: {}", why);
+                        error!("Can't read null-terminated 16-bit string: {why}");
                         // Or we can break;
                         return Err(why.into());
                     }
                     Ok(p) => p,
                 };
                 debug!(
-                    "Null-terminated 16-bit string is {:?} and its id is {}",
-                    null_str, string_id_current
+                    "Null-terminated 16-bit string is {null_str:?} and its id is {string_id_current}"
                 );
                 // save string here id changes later
                 string_map.insert(string_id_current, null_str.to_string());
@@ -135,14 +134,14 @@ pub fn handle_string_package(
             StringBlockType::Skip2 => {
                 let skip_count: u16 = match package_cursor.read_ne() {
                     Err(why) => {
-                        error!("Can't read skip count {}", why);
+                        error!("Can't read skip count {why}");
                         // Or we can break;
                         return Err(why.into());
                     }
                     Ok(p) => p,
                 };
                 string_id_current += i32::from(skip_count);
-                debug!("Skip count is {}", skip_count);
+                debug!("Skip count is {skip_count}");
             }
             StringBlockType::Skip1 => {
                 let skip_count: u8 = match package_cursor.read_ne() {
@@ -153,7 +152,7 @@ pub fn handle_string_package(
                     Ok(p) => p,
                 };
                 string_id_current += i32::from(skip_count);
-                debug!("Skip count is {}", skip_count);
+                debug!("Skip count is {skip_count}");
             }
             StringBlockType::End => {
                 break;

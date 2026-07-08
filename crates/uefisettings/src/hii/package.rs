@@ -86,7 +86,7 @@ fn get_package_lists(source: &[u8]) -> Result<Vec<PackageList>> {
         .len()
         .try_into()
         .context("failed to convert buffer size into u64")?;
-    debug!("Size of db is {} bytes", db_size);
+    debug!("Size of db is {db_size} bytes");
 
     let mut used_bytes = db_cursor
         .stream_position()
@@ -95,7 +95,7 @@ fn get_package_lists(source: &[u8]) -> Result<Vec<PackageList>> {
     while used_bytes < db_size {
         let package_list: PackageList = match db_cursor.read_ne() {
             Err(why) => {
-                error!("Can't parse more package lists: {}", why);
+                error!("Can't parse more package lists: {why}");
                 // We can also break to skip the error and return the already parsed package lists.
                 return Err(why.into());
             }
@@ -107,7 +107,7 @@ fn get_package_lists(source: &[u8]) -> Result<Vec<PackageList>> {
         used_bytes = db_cursor
             .stream_position()
             .context("failed to find current position of db_cursor")?;
-        debug!("Current db_cursor stream position is {}", used_bytes);
+        debug!("Current db_cursor stream position is {used_bytes}");
     }
 
     Ok(package_lists)
@@ -121,7 +121,7 @@ fn get_packages(package_list: &PackageList) -> Result<Vec<Package>> {
     loop {
         let package: Package = match pl_cursor.read_ne() {
             Err(why) => {
-                error!("Can't parse more packages in this package list {}", why);
+                error!("Can't parse more packages in this package list {why}");
                 // We can also break to skip the error and save correctly parsed packages.
                 return Err(why.into());
             }
@@ -218,7 +218,7 @@ pub fn read_db(source: &[u8]) -> Result<ParsedHiiDB> {
                 PackageType::Strings => match strings::handle_string_package(&mut package_cursor) {
                     Ok(string_map) => package_list_string_maps.push(string_map),
                     Err(why) => {
-                        error!("Can't parse as string header {}", why);
+                        error!("Can't parse as string header {why}");
                         // We can also continue to ignore the error because we already know the bounds of each package so we can skip to the next one.
                         return Err(why);
                     }
@@ -226,7 +226,7 @@ pub fn read_db(source: &[u8]) -> Result<ParsedHiiDB> {
                 PackageType::Form => match forms::handle_form_package(&mut package_cursor) {
                     Ok(root_node) => roots.push(root_node),
                     Err(why) => {
-                        error!("Can't parse form package {}", why);
+                        error!("Can't parse form package {why}");
                         // We can also continue to ignore the error because we already know the bounds of each package so we can skip to the next one.
                         return Err(why);
                     }

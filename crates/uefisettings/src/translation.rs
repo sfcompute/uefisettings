@@ -57,8 +57,7 @@ pub fn get_qa_variations_hii(question: &str, answer: &str) -> HiiTranslation {
                     }
                 }
                 info!(
-                    "question_variations after translation: {:?} and new_value_variations {:?}",
-                    question_variations, answer_variations
+                    "question_variations after translation: {question_variations:?} and new_value_variations {answer_variations:?}"
                 );
                 return HiiTranslation::Translated {
                     question_variations,
@@ -91,7 +90,7 @@ pub fn translate_response(question: &str, answer: &str, backend: Backend) -> Str
                 for (key, value) in answer_replacements {
                     for replacement in value {
                         if replacement.eq_ignore_ascii_case(answer) {
-                            info!("reverse translating {} to {}", replacement, key);
+                            info!("reverse translating {replacement} to {key}");
                             return key.to_owned();
                         }
                     }

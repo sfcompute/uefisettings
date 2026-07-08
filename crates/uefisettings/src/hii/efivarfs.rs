@@ -33,8 +33,7 @@ impl EfivarsMountGuard {
         let original_flags = get_current_mount_flags(EFIVARS_MOUNT_POINT)?;
         if original_flags.contains(MsFlags::MS_RDONLY) {
             debug!(
-                "{} mounted read only, remounting read/write",
-                EFIVARS_MOUNT_POINT
+                "{EFIVARS_MOUNT_POINT} mounted read only, remounting read/write"
             );
             mount(
                 None as Option<&str>,
@@ -46,8 +45,7 @@ impl EfivarsMountGuard {
             .context(format!("Failed to remount {EFIVARS_MOUNT_POINT} RW"))?;
         } else {
             debug!(
-                "{} is mounted read/write, skipping remount",
-                EFIVARS_MOUNT_POINT
+                "{EFIVARS_MOUNT_POINT} is mounted read/write, skipping remount"
             );
         }
 
@@ -60,7 +58,7 @@ impl Drop for EfivarsMountGuard {
         // efivarfs being rw is scary. We should unmount it ASAP.
         // If efivarfs is set as ro in fstab (the ideal), "remount" along will change it back.
         if self.original_flags.contains(MsFlags::MS_RDONLY) {
-            debug!("remounting {} as read only", EFIVARS_MOUNT_POINT);
+            debug!("remounting {EFIVARS_MOUNT_POINT} as read only");
             let res = mount(
                 None as Option<&str>,
                 EFIVARS_MOUNT_POINT,
@@ -70,8 +68,7 @@ impl Drop for EfivarsMountGuard {
             );
             if let Err(why) = res {
                 error!(
-                    "failed to remount {} because {:#}",
-                    EFIVARS_MOUNT_POINT, why
+                    "failed to remount {EFIVARS_MOUNT_POINT} because {why:#}"
                 );
             }
         }

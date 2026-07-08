@@ -807,7 +807,7 @@ pub fn handle_form_package(
 
             // if its our own dummy opcode we've reached the top again and this form package has been parsed
             if current_scope.borrow().op_code == IFROpCode::Unknown(DUMMY_OPCODE) {
-                debug!("Reached root element. Current scope: {:?}", current_scope);
+                debug!("Reached root element. Current scope: {current_scope:?}");
                 // NOTE: I'm 99.99 % sure there is only one top level FormSet in a package.
                 // Just in case there isn't there could be a chance we're skipping any subsequent FormSets
                 // by breaking here.
@@ -852,7 +852,7 @@ fn handle_opcode(node: &Rc<RefCell<IFROperation>>) -> Result<()> {
             let parsed: FormSet = data_cursor
                 .read_ne()
                 .context("Failed to parse FormSet's data")?;
-            debug!("FormSet is {:?}", parsed);
+            debug!("FormSet is {parsed:?}");
             node.parsed_data = ParsedOperation::FormSet(parsed);
         }
 
@@ -860,21 +860,21 @@ fn handle_opcode(node: &Rc<RefCell<IFROperation>>) -> Result<()> {
             let parsed: OneOf = data_cursor
                 .read_ne()
                 .context("Failed to parse OneOf's data")?;
-            debug!("OneOf is {:?}", parsed);
+            debug!("OneOf is {parsed:?}");
             node.parsed_data = ParsedOperation::OneOf(parsed);
         }
         IFROpCode::CheckBox => {
             let parsed: CheckBox = data_cursor
                 .read_ne()
                 .context("Failed to parse CheckBox's data")?;
-            debug!("CheckBox is {:?}", parsed);
+            debug!("CheckBox is {parsed:?}");
             node.parsed_data = ParsedOperation::CheckBox(parsed);
         }
         IFROpCode::OneOfOption => {
             let parsed: OneOfOption = data_cursor
                 .read_ne()
                 .context("Failed to parse OneOfOption's data")?;
-            debug!("OneOfOption is {:?}", parsed);
+            debug!("OneOfOption is {parsed:?}");
             node.parsed_data = ParsedOperation::OneOfOption(parsed);
         }
         IFROpCode::VarStore => {
@@ -895,10 +895,10 @@ fn handle_opcode(node: &Rc<RefCell<IFROperation>>) -> Result<()> {
                 // For non debug uses we will only call this when we want to know the answer to a question.
                 match &parsed.read_bytes() {
                     Ok(b) => {
-                        debug!("Varstore bytes are {:?}", b);
+                        debug!("Varstore bytes are {b:?}");
                     }
                     Err(why) => {
-                        debug!("Failed to read uefi varstore {}", why);
+                        debug!("Failed to read uefi varstore {why}");
                     }
                 }
             }
@@ -911,70 +911,70 @@ fn handle_opcode(node: &Rc<RefCell<IFROperation>>) -> Result<()> {
             let parsed: VarStoreEfi = data_cursor
                 .read_ne()
                 .context("Failed to parse VarStoreEfi's data")?;
-            debug!("VarStoreEfi is {:?}", parsed);
+            debug!("VarStoreEfi is {parsed:?}");
             node.parsed_data = ParsedOperation::VarStoreEfi(parsed);
         }
         IFROpCode::DefaultStore => {
             let parsed: DefaultStore = data_cursor
                 .read_ne()
                 .context("Failed to parse DefaultStore's data")?;
-            debug!("DefaultStore is {:?}", parsed);
+            debug!("DefaultStore is {parsed:?}");
             node.parsed_data = ParsedOperation::DefaultStore(parsed);
         }
         IFROpCode::Default => {
             let parsed: IFRDefault = data_cursor
                 .read_ne()
                 .context("Failed to parse Default's data")?;
-            debug!("Default is {:?}", parsed);
+            debug!("Default is {parsed:?}");
             node.parsed_data = ParsedOperation::IFRDefault(parsed);
         }
         IFROpCode::Form => {
             let parsed: Form = data_cursor
                 .read_ne()
                 .context("Failed to parse Form's data")?;
-            debug!("Form is {:?}", parsed);
+            debug!("Form is {parsed:?}");
             node.parsed_data = ParsedOperation::Form(parsed);
         }
         IFROpCode::Text => {
             let parsed: Text = data_cursor
                 .read_ne()
                 .context("Failed to parse Text's data")?;
-            debug!("Text is {:?}", parsed);
+            debug!("Text is {parsed:?}");
             node.parsed_data = ParsedOperation::Text(parsed);
         }
         IFROpCode::Subtitle => {
             let parsed: Subtitle = data_cursor
                 .read_ne()
                 .context("Failed to parse Subtitle's data")?;
-            debug!("Subtitle is {:?}", parsed);
+            debug!("Subtitle is {parsed:?}");
             node.parsed_data = ParsedOperation::Subtitle(parsed);
         }
         IFROpCode::Numeric => {
             let parsed: Numeric = data_cursor
                 .read_ne()
                 .context("Failed to parse Numeric's data")?;
-            debug!("Numeric is {:?}", parsed);
+            debug!("Numeric is {parsed:?}");
             node.parsed_data = ParsedOperation::Numeric(parsed);
         }
         IFROpCode::QuestionRef1 => {
             let parsed: QuestionRef1 = data_cursor
                 .read_ne()
                 .context("Failed to parse QuestionRef1's data")?;
-            debug!("QuestionRef1 is {:?}", parsed);
+            debug!("QuestionRef1 is {parsed:?}");
             node.parsed_data = ParsedOperation::QuestionRef1(parsed);
         }
         IFROpCode::EqIdVal => {
             let parsed: EqIdVal = data_cursor
                 .read_ne()
                 .context("Failed to parse EqIdVal's data")?;
-            debug!("EqIdVal is {:?}", parsed);
+            debug!("EqIdVal is {parsed:?}");
             node.parsed_data = ParsedOperation::EqIdVal(parsed);
         }
         IFROpCode::EqIdValList => {
             let parsed: EqIdValList = data_cursor
                 .read_ne()
                 .context("Failed to parse EqIdValList's data")?;
-            debug!("EqIdValList is {:?}", parsed);
+            debug!("EqIdValList is {parsed:?}");
             node.parsed_data = ParsedOperation::EqIdValList(parsed);
         }
         _ => (),

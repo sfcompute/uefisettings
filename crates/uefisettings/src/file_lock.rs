@@ -10,20 +10,20 @@
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::fs::File;
 use std::fs::OpenOptions;
-use std::os::unix::prelude::IntoRawFd;
 use std::path::Path;
 
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use log::error;
-use nix::fcntl::flock;
+use nix::fcntl::Flock;
 use nix::fcntl::FlockArg;
 
 pub struct FileLock {
     path: String,
-    file_descriptor: i32,
+    // The `Flock` guard releases the lock (and closes the file) when dropped.
+    lock: Option<Flock<File>>,
 }
 
 impl FileLock {
@@ -33,8 +33,8 @@ impl FileLock {
         T: AsRef<Path> + ToString,
     {
         Self {
-            file_descriptor: -1,
             path: file_path.to_string(),
+            lock: None,
         }
     }
 
@@ -47,23 +47,11 @@ impl FileLock {
             .open(&self.path)
             .context(format!("failed to open or create {}", &self.path))?;
 
-        self.file_descriptor = file.into_raw_fd();
+        let flock = Flock::lock(file, FlockArg::LockExclusiveNonblock).map_err(|(_, errno)| {
+            anyhow!("failed to get lock on path {}: {errno}", &self.path)
+        })?;
+        self.lock = Some(flock);
 
-        match flock(self.file_descriptor, FlockArg::LockExclusiveNonblock) {
-            Err(_) => Err(anyhow!(format!(
-                "failed to get lock on fd {} path {}",
-                &self.file_descriptor, &self.path
-            ))),
-            Ok(()) => Ok(()),
-        }
-    }
-}
-impl Drop for FileLock {
-    fn drop(&mut self) {
-        if self.file_descriptor != -1 {
-            if let Err(error_code) = flock(self.file_descriptor, FlockArg::UnlockNonblock) {
-                error!("file lock unlock failed with error code {}", error_code);
-            }
-        }
+        Ok(())
     }
 }

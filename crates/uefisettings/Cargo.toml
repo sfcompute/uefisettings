@@ -13,10 +13,10 @@ path = "src/lib.rs"
 [dependencies]
 anyhow = "1"
 log = "0.4"
-nix = { version = "0.27", features = ["fs", "ioctl", "mount"] }
+nix = { version = "0.31", features = ["fs", "ioctl", "mount"] }
 binrw = "0.13"
 proc-mounts = "0.3"
-thiserror = "1"
+thiserror = "2"
 
 [dev-dependencies]
 tempfile = "3"

@@ -62,5 +62,4 @@ pub enum Backend {
     #[default]
     Unknown,
     Hii,
-    Ilo,
 }

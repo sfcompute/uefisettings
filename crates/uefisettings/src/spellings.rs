@@ -9,19 +9,12 @@ use std::sync::LazyLock;
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct QuestionMapping {
     pub hii_question: Option<HiiQuestion>,
-    pub ilo_question: Option<IloQuestion>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct HiiQuestion {
     pub question_variations: Vec<String>,
     pub answer_replacements: Option<BTreeMap<String, Vec<String>>>,
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct IloQuestion {
-    pub question: String,
-    pub answer_replacements: Option<BTreeMap<String, String>>,
 }
 
 pub const CQ_TPM_STATE: &str = "TPM State";
@@ -53,13 +46,6 @@ pub static translation_db: LazyLock<BTreeMap<String, QuestionMapping>> = LazyLoc
                     question_variations: vec!["TPM State".to_owned()],
                     answer_replacements: Some(enable_disable_replacements()),
                 }),
-                ilo_question: Some(IloQuestion {
-                    question: "TpmState".to_owned(),
-                    answer_replacements: Some(BTreeMap::from([(
-                        "Enabled".to_owned(),
-                        "PresentEnabled".to_owned(),
-                    )])),
-                }),
             },
         ),
         (
@@ -69,7 +55,6 @@ pub static translation_db: LazyLock<BTreeMap<String, QuestionMapping>> = LazyLoc
                     question_variations: vec!["Security Device Support".to_owned()],
                     answer_replacements: Some(enable_disable_replacements()),
                 }),
-                ilo_question: None,
             },
         ),
         (
@@ -81,10 +66,6 @@ pub static translation_db: LazyLock<BTreeMap<String, QuestionMapping>> = LazyLoc
                         "Enable Intel(R) TXT".to_owned(),
                     ],
                     answer_replacements: Some(enable_disable_replacements()),
-                }),
-                ilo_question: Some(IloQuestion {
-                    question: "IntelTxt".to_owned(),
-                    answer_replacements: None,
                 }),
             },
         ),
@@ -99,7 +80,6 @@ pub static translation_db: LazyLock<BTreeMap<String, QuestionMapping>> = LazyLoc
                     ],
                     answer_replacements: Some(enable_disable_replacements()),
                 }),
-                ilo_question: None,
             },
         ),
         (
@@ -113,7 +93,6 @@ pub static translation_db: LazyLock<BTreeMap<String, QuestionMapping>> = LazyLoc
                     ],
                     answer_replacements: Some(enable_disable_replacements()),
                 }),
-                ilo_question: None,
             },
         ),
     ])

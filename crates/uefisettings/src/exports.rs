@@ -10,6 +10,7 @@
 //
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashSet;
 use std::fmt::Write;
 
 use anyhow::Context;
@@ -18,9 +19,6 @@ use crate::hii::extract;
 use crate::hii::forms;
 use crate::hii::forms::list_questions;
 use crate::hii::package;
-use crate::translation::get_qa_variations_hii;
-use crate::translation::translate_response;
-use crate::translation::HiiTranslation;
 use crate::types::Backend;
 use crate::types::GetResponse;
 use crate::types::GetResponseList;
@@ -165,17 +163,7 @@ impl HiiBackend {
 }
 
 fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetResponseList> {
-    let hii_translation = get_qa_variations_hii(question, "");
-    let (question_variations, is_translated) = match hii_translation {
-        HiiTranslation::Translated {
-            question_variations,
-            ..
-        } => (question_variations, true),
-        HiiTranslation::NotTranslated {
-            question_variations,
-            ..
-        } => (question_variations, false),
-    };
+    let question_variations = HashSet::from([question]);
 
     let mut resp = Vec::new();
 
@@ -192,7 +180,6 @@ fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetRespon
                 let mut get_resp = GetResponse {
                     selector: guid.clone(),
                     backend: Backend::Hii,
-                    is_translated,
                     question: Question {
                         name: question_descriptor.question,
                         answer: question_descriptor.value,
@@ -200,11 +187,6 @@ fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetRespon
                         ..Default::default()
                     },
                 };
-
-                if is_translated {
-                    get_resp.question.answer =
-                        translate_response(question, &get_resp.question.answer, Backend::Hii);
-                }
 
                 for opt in question_descriptor.possible_options {
                     get_resp.question.options.push(opt.value);
@@ -229,17 +211,7 @@ impl SettingsBackend for HiiBackend {
         let db_bytes = extract::extract_db()?;
         let parsed_db = package::read_db(&db_bytes)?;
 
-        let hii_translation = get_qa_variations_hii(question, new_value);
-        let (question_variations, new_value_variations, is_translated) = match hii_translation {
-            HiiTranslation::Translated {
-                question_variations,
-                answer_variations,
-            } => (question_variations, answer_variations, true),
-            HiiTranslation::NotTranslated {
-                question_variations,
-                answer_variations,
-            } => (question_variations, answer_variations, false),
-        };
+        let question_variations = HashSet::from([question]);
 
         for (guid, package_list) in parsed_db.forms {
             let string_packages = parsed_db
@@ -264,16 +236,10 @@ impl SettingsBackend for HiiBackend {
                         // then we can't set answers but it isn't an error.
                         let mut found_option = false;
                         for opt in &(question_descriptor.possible_options) {
-                            if found_option {
+                            if new_value.eq_ignore_ascii_case(&(opt.value)) {
+                                found_option = true;
+                                modified = forms::change_value(&question_descriptor, &(opt.value))?;
                                 break;
-                            }
-                            for variation in &new_value_variations {
-                                if variation.eq_ignore_ascii_case(&(opt.value)) {
-                                    found_option = true;
-                                    modified =
-                                        forms::change_value(&question_descriptor, &(opt.value))?;
-                                    break;
-                                }
                             }
                         }
                         // if not a single option matched then error out
@@ -287,7 +253,6 @@ impl SettingsBackend for HiiBackend {
                         let mut set_resp = SetResponse {
                             selector: guid.clone(),
                             backend: Backend::Hii,
-                            is_translated,
                             question: Question {
                                 name: question_descriptor.question,
                                 answer: new_value.to_owned(),

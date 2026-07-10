@@ -207,7 +207,6 @@ fn print_get(list: &GetResponseList, json: bool) {
             .map(|r| json!({
                 "selector": r.selector,
                 "backend": format!("{:?}", r.backend),
-                "is_translated": r.is_translated,
                 "question": question_to_json(&r.question),
             }))
             .collect::<Vec<Value>>(),
@@ -223,7 +222,6 @@ fn print_set(list: &SetResponseList, json: bool) {
             .map(|r| json!({
                 "selector": r.selector,
                 "backend": format!("{:?}", r.backend),
-                "is_translated": r.is_translated,
                 "modified": r.modified,
                 "question": question_to_json(&r.question),
             }))

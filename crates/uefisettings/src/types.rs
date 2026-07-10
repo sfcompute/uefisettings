@@ -19,7 +19,6 @@ pub struct SetResponse {
     pub backend: Backend,
     pub question: Question,
     pub modified: bool,
-    pub is_translated: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -32,7 +31,6 @@ pub struct GetResponse {
     pub selector: String,
     pub backend: Backend,
     pub question: Question,
-    pub is_translated: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

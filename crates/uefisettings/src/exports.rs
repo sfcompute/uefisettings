@@ -57,6 +57,59 @@ impl HiiBackend {
         Ok(resp)
     }
 
+    /// `parse_db` reads the `HiiDB` from bytes and returns a `ParsedHiiDB` struct.
+    ///
+    /// # Errors
+    /// Returns an error if the `HiiDB` bytes cannot be parsed.
+    pub fn parse_db() -> Result<package::ParsedHiiDB> {
+        let db_bytes = extract::extract_db()?;
+        package::read_db(&db_bytes)
+    }
+
+    /// `get_one` gets the value of a single question from the `ParsedHiiDB` struct.
+    /// 
+    /// # Errors
+    /// Returns an error if database is malformed.
+    pub fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetResponseList> {
+        let question_variations = HashSet::from([question]);
+
+        let mut resp = Vec::new();
+
+        for (guid, package_list) in &parsed_db.forms {
+            for form_package in package_list {
+                if let Some(question_descriptor) = forms::find_question(
+                    form_package.clone(),
+                    parsed_db
+                        .strings
+                        .get(guid)
+                        .context(format!("Failed to get string packages using GUID {guid}"))?,
+                    &question_variations,
+                ) {
+                    let mut get_resp = GetResponse {
+                        selector: guid.clone(),
+                        backend: Backend::Hii,
+                        question: Question {
+                            name: question_descriptor.question,
+                            answer: question_descriptor.value,
+                            help: question_descriptor.help,
+                            ..Default::default()
+                        },
+                    };
+
+                    for opt in question_descriptor.possible_options {
+                        get_resp.question.options.push(opt.value);
+                    }
+
+                    resp.push(get_resp);
+                }
+            }
+        }
+
+        Ok(GetResponseList {
+            responses: resp,
+        })
+    }
+
     /// `show_ifr` returns a human readable representation of the forms in Hii
     ///
     /// # Errors
@@ -153,48 +206,6 @@ impl HiiBackend {
     }
 }
 
-/// # Errors
-/// Returns an error if database is malformed.
-pub fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetResponseList> {
-    let question_variations = HashSet::from([question]);
-
-    let mut resp = Vec::new();
-
-    for (guid, package_list) in &parsed_db.forms {
-        for form_package in package_list {
-            if let Some(question_descriptor) = forms::find_question(
-                form_package.clone(),
-                parsed_db
-                    .strings
-                    .get(guid)
-                    .context(format!("Failed to get string packages using GUID {guid}"))?,
-                &question_variations,
-            ) {
-                let mut get_resp = GetResponse {
-                    selector: guid.clone(),
-                    backend: Backend::Hii,
-                    question: Question {
-                        name: question_descriptor.question,
-                        answer: question_descriptor.value,
-                        help: question_descriptor.help,
-                        ..Default::default()
-                    },
-                };
-
-                for opt in question_descriptor.possible_options {
-                    get_resp.question.options.push(opt.value);
-                }
-
-                resp.push(get_resp);
-            }
-        }
-    }
-
-    Ok(GetResponseList {
-        responses: resp,
-    })
-}
-
 impl SettingsBackend for HiiBackend {
     fn set(question: &str, new_value: &str, _selector: Option<&str>) -> Result<SetResponseList> {
         // TODO: use selector to only change values which match question + selector
@@ -275,6 +286,6 @@ impl SettingsBackend for HiiBackend {
         // TODO: use selector to only get questions which match question + selector
         let db_bytes = extract::extract_db()?;
         let parsed_db = package::read_db(&db_bytes)?;
-        get_one(question, &parsed_db)
+        Self::get_one(question, &parsed_db)
     }
 }

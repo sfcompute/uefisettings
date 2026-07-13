@@ -151,18 +151,11 @@ impl HiiBackend {
         }
         Ok(res)
     }
-
-    /// # Errors
-    /// Returns an error if the `HiiDB` cannot be read or parsed.
-    pub fn get_many<'a>(questions: impl Iterator<Item = &'a str>) -> Result<Vec<GetResponseList>> {
-        let db_bytes = extract::extract_db()?;
-        let parsed_db = package::read_db(&db_bytes)?;
-
-        questions.map(|q| get_one(q, &parsed_db)).collect()
-    }
 }
 
-fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetResponseList> {
+/// # Errors
+/// Returns an error if database is malformed.
+pub fn get_one(question: &str, parsed_db: &package::ParsedHiiDB) -> Result<GetResponseList> {
     let question_variations = HashSet::from([question]);
 
     let mut resp = Vec::new();

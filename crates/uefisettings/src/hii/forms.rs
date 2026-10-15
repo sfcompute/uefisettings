@@ -490,9 +490,10 @@ trait VariableStore {
             "failed to open sysfs efivars '{}' to get varstore bytes",
             self.store_filename()
         ))?;
-        let mut buf = vec![0u8; self.size().into()];
-        debug!("buffer size: {}", self.size());
-        // only read as much as we require
+        // efivarfs prefixes the variable's data with 4 bytes of attributes, which the varstore
+        // size doesn't count; without them the last 4 bytes of data would be cut off.
+        let mut buf = vec![0u8; 4 + usize::from(self.size())];
+        debug!("buffer size: {}", buf.len());
         file.read_exact(&mut buf).context(format!(
             "failed to read bytes from sysfs efivars '{}' of size specified by varstore in hiidb",
             self.store_filename()

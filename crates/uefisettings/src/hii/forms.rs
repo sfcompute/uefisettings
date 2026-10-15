@@ -1127,7 +1127,7 @@ fn find_question_inner(
             if questions.iter().any(|q| {
                 possible_question_phrases
                     .iter()
-                    .any(|p| q.eq_ignore_ascii_case(p.trim()))
+                    .any(|p| q.trim().eq_ignore_ascii_case(p.trim()))
             }) {
                 let varstore = find_corresponding_varstore(node, var_store_id);
                 let question = questions[0];

@@ -75,6 +75,11 @@ enum HiiSubcommands {
         #[arg(short = 'j', long = "json")]
         json: bool,
     },
+    /// Get the current values of many questions (one per line on stdin), parsing `HiiDB` once
+    GetMany {
+        #[arg(short = 'j', long = "json")]
+        json: bool,
+    },
     /// Set/change the value of a question
     Set {
         question: String,
@@ -118,6 +123,20 @@ fn handle_cmds(args: &UefiSettingsToolArgs) -> Result<()> {
             HiiSubcommands::Get { question, json } => {
                 let res = HiiBackend::get(question, None)?;
                 print_get(&res, *json);
+            }
+            HiiSubcommands::GetMany { json } => {
+                let parsed_db = HiiBackend::parse_db()?;
+                let mut results = Map::new();
+                for question in std::io::stdin().lines() {
+                    let question = question.context("reading questions from stdin")?;
+                    let question = question.trim();
+                    if question.is_empty() || results.contains_key(question) {
+                        continue;
+                    }
+                    let res = HiiBackend::get_one(question, &parsed_db)?;
+                    results.insert(question.to_string(), get_responses_json(&res));
+                }
+                print_value(&json!({ "results": Value::Object(results) }), *json);
             }
             HiiSubcommands::Set {
                 question,
@@ -199,19 +218,21 @@ fn question_to_json(question: &Question) -> Value {
     })
 }
 
-fn print_get(list: &GetResponseList, json: bool) {
-    let value = json!({
-        "responses": list
-            .responses
-            .iter()
-            .map(|r| json!({
+fn get_responses_json(list: &GetResponseList) -> Value {
+    list.responses
+        .iter()
+        .map(|r| {
+            json!({
                 "selector": r.selector,
                 "backend": format!("{:?}", r.backend),
                 "question": question_to_json(&r.question),
-            }))
-            .collect::<Vec<Value>>(),
-    });
-    print_value(&value, json);
+            })
+        })
+        .collect()
+}
+
+fn print_get(list: &GetResponseList, json: bool) {
+    print_value(&json!({ "responses": get_responses_json(list) }), json);
 }
 
 fn print_set(list: &SetResponseList, json: bool) {

@@ -1225,46 +1225,29 @@ fn handle_oneof(
                 answer.push_str(format!("<VStoreError: {e}>").as_str());
                 varstore_not_found = true;
             }
-            Ok(bytes) => match &parsed.data {
+            Ok(bytes) => match match &parsed.data {
                 Range::Range8(_) => {
-                    try_read_answer_as_option::<u8>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u8>(&parsed.question_header(), &bytes)
                 }
                 Range::Range16(_) => {
-                    try_read_answer_as_option::<u16>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u16>(&parsed.question_header(), &bytes)
                 }
                 Range::Range32(_) => {
-                    try_read_answer_as_option::<u32>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u32>(&parsed.question_header(), &bytes)
                 }
                 Range::Range64(_) => {
-                    try_read_answer_as_option::<u64>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u64>(&parsed.question_header(), &bytes)
+                }
+            } {
+                Ok(v) => chosen_value = v,
+                // Report the failed read rather than guessing: a plausible-looking answer here
+                // would be indistinguishable from a real setting.
+                Err(e) => {
+                    answer.push_str(format!("<ExtractEFIDataError: {e:#}>").as_str());
+                    varstore_not_found = true;
                 }
             },
         },
-    }
-
-    if chosen_value == u64::MAX {
-        // No answer was provided, so using the default value instead.
-        for child in &node.borrow().children {
-            if let ParsedOperation::IFRDefault(o) = &child.borrow().parsed_data {
-                chosen_value = u64::from(o.default_id);
-            }
-        }
     }
 
     let mut possible_options = Vec::new();
@@ -1405,18 +1388,15 @@ where
 }
 
 // utility function for OneOfOptions
-fn try_read_answer_as_option<T>(
-    question_header: &QuestionHeader,
-    bytes: &Vec<u8>,
-    chosen_value: &mut u64,
-) where
+fn try_read_answer_as_option<T>(question_header: &QuestionHeader, bytes: &Vec<u8>) -> Result<u64>
+where
     T: BinRead + Display + Into<u64>,
     for<'a> <T as BinRead>::Args<'a>: Default,
 {
-    let extracted_data: Result<T> = extract_efi_data(question_header.var_store_info, bytes);
-    if let Ok(a) = extracted_data {
-        *chosen_value = a.into();
-    }
+    let offset = question_header.var_store_info;
+    extract_efi_data::<T>(offset, bytes)
+        .map(Into::into)
+        .context(format!("offset: {offset}; buflen: {}", bytes.len()))
 }
 
 // display returns a String which is our tree like representation of a Forms package

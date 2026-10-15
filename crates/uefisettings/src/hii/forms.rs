@@ -460,7 +460,7 @@ impl Question for CheckBox {
     }
 }
 
-#[derive(BinRead, Debug, PartialEq)]
+#[derive(BinRead, Debug, PartialEq, Clone)]
 #[br(little)]
 pub struct OneOfOption {
     pub option_string_id: u16,
@@ -1204,6 +1204,22 @@ fn handle_checkbox(
     res
 }
 
+// Options can sit under conditionals (SuppressIf, GrayOutIf) rather than directly under the
+// OneOf, e.g. SNC's "Enable SNC2" on Gigabyte. Nested questions own their own options, so stop there.
+fn collect_oneof_options(node: &Rc<RefCell<IFROperation>>) -> Vec<OneOfOption> {
+    let mut options = Vec::new();
+    for child in &node.borrow().children {
+        match &child.borrow().parsed_data {
+            ParsedOperation::OneOfOption(o) => options.push(o.clone()),
+            ParsedOperation::OneOf(_)
+            | ParsedOperation::Numeric(_)
+            | ParsedOperation::CheckBox(_) => {}
+            _ => options.extend(collect_oneof_options(child)),
+        }
+    }
+    options
+}
+
 fn handle_oneof(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &OneOf,
@@ -1251,11 +1267,10 @@ fn handle_oneof(
     }
 
     let mut possible_options = Vec::new();
-    // Some of OneOf's children are OneOfOptions
 
     let mut found_option = false;
-    for child in &node.borrow().children {
-        if let ParsedOperation::OneOfOption(o) = &child.borrow().parsed_data {
+    for o in collect_oneof_options(node) {
+        {
             let current_value: u64 = match o.value {
                 TypeValue::NumSize8(c) => u64::from(c),
                 TypeValue::NumSize16(c) => u64::from(c),

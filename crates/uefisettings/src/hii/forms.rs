@@ -460,7 +460,7 @@ impl Question for CheckBox {
     }
 }
 
-#[derive(BinRead, Debug, PartialEq)]
+#[derive(BinRead, Debug, PartialEq, Clone)]
 #[br(little)]
 pub struct OneOfOption {
     pub option_string_id: u16,
@@ -490,9 +490,10 @@ trait VariableStore {
             "failed to open sysfs efivars '{}' to get varstore bytes",
             self.store_filename()
         ))?;
-        let mut buf = vec![0u8; self.size().into()];
-        debug!("buffer size: {}", self.size());
-        // only read as much as we require
+        // efivarfs prefixes the variable's data with 4 bytes of attributes, which the varstore
+        // size doesn't count; without them the last 4 bytes of data would be cut off.
+        let mut buf = vec![0u8; 4 + usize::from(self.size())];
+        debug!("buffer size: {}", buf.len());
         file.read_exact(&mut buf).context(format!(
             "failed to read bytes from sysfs efivars '{}' of size specified by varstore in hiidb",
             self.store_filename()
@@ -1127,7 +1128,7 @@ fn find_question_inner(
             if questions.iter().any(|q| {
                 possible_question_phrases
                     .iter()
-                    .any(|p| q.eq_ignore_ascii_case(p.trim()))
+                    .any(|p| q.trim().eq_ignore_ascii_case(p.trim()))
             }) {
                 let varstore = find_corresponding_varstore(node, var_store_id);
                 let question = questions[0];
@@ -1203,6 +1204,22 @@ fn handle_checkbox(
     res
 }
 
+// Options can sit under conditionals (SuppressIf, GrayOutIf) rather than directly under the
+// OneOf, e.g. SNC's "Enable SNC2" on Gigabyte. Nested questions own their own options, so stop there.
+fn collect_oneof_options(node: &Rc<RefCell<IFROperation>>) -> Vec<OneOfOption> {
+    let mut options = Vec::new();
+    for child in &node.borrow().children {
+        match &child.borrow().parsed_data {
+            ParsedOperation::OneOfOption(o) => options.push(o.clone()),
+            ParsedOperation::OneOf(_)
+            | ParsedOperation::Numeric(_)
+            | ParsedOperation::CheckBox(_) => {}
+            _ => options.extend(collect_oneof_options(child)),
+        }
+    }
+    options
+}
+
 fn handle_oneof(
     varstore: Result<Box<dyn VariableStore>, anyhow::Error>,
     parsed: &OneOf,
@@ -1224,54 +1241,36 @@ fn handle_oneof(
                 answer.push_str(format!("<VStoreError: {e}>").as_str());
                 varstore_not_found = true;
             }
-            Ok(bytes) => match &parsed.data {
+            Ok(bytes) => match match &parsed.data {
                 Range::Range8(_) => {
-                    try_read_answer_as_option::<u8>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u8>(&parsed.question_header(), &bytes)
                 }
                 Range::Range16(_) => {
-                    try_read_answer_as_option::<u16>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u16>(&parsed.question_header(), &bytes)
                 }
                 Range::Range32(_) => {
-                    try_read_answer_as_option::<u32>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u32>(&parsed.question_header(), &bytes)
                 }
                 Range::Range64(_) => {
-                    try_read_answer_as_option::<u64>(
-                        &parsed.question_header(),
-                        &bytes,
-                        &mut chosen_value,
-                    );
+                    try_read_answer_as_option::<u64>(&parsed.question_header(), &bytes)
+                }
+            } {
+                Ok(v) => chosen_value = v,
+                // Report the failed read rather than guessing: a plausible-looking answer here
+                // would be indistinguishable from a real setting.
+                Err(e) => {
+                    answer.push_str(format!("<ExtractEFIDataError: {e:#}>").as_str());
+                    varstore_not_found = true;
                 }
             },
         },
     }
 
-    if chosen_value == u64::MAX {
-        // No answer was provided, so using the default value instead.
-        for child in &node.borrow().children {
-            if let ParsedOperation::IFRDefault(o) = &child.borrow().parsed_data {
-                chosen_value = u64::from(o.default_id);
-            }
-        }
-    }
-
     let mut possible_options = Vec::new();
-    // Some of OneOf's children are OneOfOptions
 
     let mut found_option = false;
-    for child in &node.borrow().children {
-        if let ParsedOperation::OneOfOption(o) = &child.borrow().parsed_data {
+    for o in collect_oneof_options(node) {
+        {
             let current_value: u64 = match o.value {
                 TypeValue::NumSize8(c) => u64::from(c),
                 TypeValue::NumSize16(c) => u64::from(c),
@@ -1404,18 +1403,15 @@ where
 }
 
 // utility function for OneOfOptions
-fn try_read_answer_as_option<T>(
-    question_header: &QuestionHeader,
-    bytes: &Vec<u8>,
-    chosen_value: &mut u64,
-) where
+fn try_read_answer_as_option<T>(question_header: &QuestionHeader, bytes: &Vec<u8>) -> Result<u64>
+where
     T: BinRead + Display + Into<u64>,
     for<'a> <T as BinRead>::Args<'a>: Default,
 {
-    let extracted_data: Result<T> = extract_efi_data(question_header.var_store_info, bytes);
-    if let Ok(a) = extracted_data {
-        *chosen_value = a.into();
-    }
+    let offset = question_header.var_store_info;
+    extract_efi_data::<T>(offset, bytes)
+        .map(Into::into)
+        .context(format!("offset: {offset}; buflen: {}", bytes.len()))
 }
 
 // display returns a String which is our tree like representation of a Forms package
